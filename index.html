@@ -6,13 +6,33 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
+
 <div class="container">
-  <h1>My Widgets</h1>
-  <div class="links">
-    <a href="image_slider/index.html">🎞 Image Slider</a>
-    <a href="streak/index.html">🔥 Streak Counter</a>
-    <!-- Add more widgets later -->
+  <h1>🌟 My Widget Gallery</h1>
+  <div class="gallery">
+    <div class="card" onclick="goTo('image_slider/index.html')">
+      🎞
+      <h2>Image Slider</h2>
+      <p>View your GIF collection in style</p>
+    </div>
+
+    <div class="card" onclick="goTo('streak/index.html')">
+      🔥
+      <h2>Streak Counter</h2>
+      <p>Track your daily progress</p>
+    </div>
+
+    <!-- Add more cards here -->
+    <!-- Example:
+    <div class="card" onclick="goTo('widget3/widget3.html')">
+      🧩
+      <h2>Widget 3</h2>
+      <p>Description</p>
+    </div>
+    -->
   </div>
 </div>
+
+<script src="script.js"></script>
 </body>
 </html>
