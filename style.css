@@ -1,0 +1,50 @@
+/* Notion dark mode background */
+body {
+  margin: 0;
+  background: transparent; /* transparent for Notion */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+}
+
+/* Slider container */
+.slider {
+  position: relative;
+  width: 500px;
+  height: 300px;
+  overflow: hidden;
+  border-radius: 12px;
+}
+
+/* Slides */
+.slides img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: none;
+}
+
+.slides img.active {
+  display: block;
+}
+
+/* Buttons */
+button {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(40, 40, 40, 0.6);
+  color: white;
+  border: none;
+  padding: 10px;
+  cursor: pointer;
+  border-radius: 50%;
+}
+
+.prev { left: 10px; }
+.next { right: 10px; }
+
+button:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
