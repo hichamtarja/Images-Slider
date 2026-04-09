@@ -26,9 +26,11 @@ const secondsSpan = document.getElementById('seconds');
 const progressFill = document.getElementById('progress-fill');
 const runner = document.querySelector(".runner");
 const progressContainer = document.querySelector(".progress-container");
+const countdownDiv = document.getElementById("countdown");
 
 let countdownInterval;
 let milestones = [];
+let showNextMilestoneOnly = false;
 
 // Helper: random pastel color
 function getRandomColor() {
@@ -70,8 +72,7 @@ startBtn.addEventListener('click', () => {
   if(quote==="") displayQuote.style.display="none";
   else { displayQuote.style.display="block"; displayQuote.textContent = "“ "+quote+" ”"; }
 
-  // Render flags
-  renderStartEndFlags();
+  // Render dots for milestones
   renderMilestones();
 
   // Start countdown
@@ -87,7 +88,9 @@ resetBtn.addEventListener('click', () => {
   counterSection.style.display="none";
   titleInput.value=""; startInput.value=""; endInput.value=""; quoteInput.value="";
   milestones = [];
-  document.querySelectorAll(".flag, .ms-flag").forEach(f=>f.remove());
+  showNextMilestoneOnly = false;
+  document.querySelectorAll(".ms-dot").forEach(f=>f.remove());
+  runner.style.animation = "";
 });
 
 // --- Countdown Function ---
@@ -98,7 +101,7 @@ function updateCountdown(start,end){
   if(diff<=0){
     diff=0;
     clearInterval(countdownInterval);
-    document.getElementById("countdown").innerHTML = `<h2 style="color:#ff6a00;">⏳ Time's Up!</h2>`;
+    countdownDiv.innerHTML = `<h2 style="color:#ff6a00;">⏳ Time's Up!</h2>`;
     progressFill.style.width="100%";
     runner.style.left="100%";
     return;
@@ -136,37 +139,10 @@ function updateCountdown(start,end){
   progress = Math.max(0,Math.min(100,progress));
   progressFill.style.width = progress+"%";
   runner.style.left = progress+"%";
+  runner.style.animation = "runnerMove 1s infinite alternate";
 }
 
-// --- Start/End Flags ---
-function renderStartEndFlags(){
-  if(!progressContainer) return;
-
-  document.querySelectorAll(".flag-start, .flag-end").forEach(f=>f.remove());
-
-  const mainStart = new Date(startInput.value);
-  const mainEnd = new Date(endInput.value);
-
-  const totalDuration = mainEnd - mainStart;
-
-  // Calculate exact position for start (0% visually may not match inner bar start)
-  const startLeft = ((mainStart - mainStart)/totalDuration) * 100;
-  const endLeft = 100;
-
-  const startFlag = document.createElement("div");
-  startFlag.classList.add("flag","flag-start");
-  startFlag.style.left = startLeft + "%";
-  startFlag.innerHTML = `<span class="flag-tooltip">Start: ${mainStart.toDateString()}</span>🚩`;
-  progressContainer.appendChild(startFlag);
-
-  const endFlag = document.createElement("div");
-  endFlag.classList.add("flag","flag-end");
-  endFlag.style.left = endLeft + "%";
-  endFlag.innerHTML = `<span class="flag-tooltip">End: ${mainEnd.toDateString()}</span>🚩`;
-  progressContainer.appendChild(endFlag);
-}
-
-// --- Milestones ---
+// --- Milestones as dots ---
 const addMsBtn = document.getElementById("add-milestone-btn");
 const modal = document.getElementById("milestone-modal");
 const closeModal = document.querySelector(".modal .close");
@@ -205,37 +181,58 @@ msSave.addEventListener("click", ()=>{
   renderMilestones();
 });
 
-// Render milestones as flags
+// Render milestones as dots
 function renderMilestones(){
   if(!progressContainer) return;
 
-  document.querySelectorAll(".ms-flag").forEach(f=>f.remove());
+  document.querySelectorAll(".ms-dot").forEach(f=>f.remove());
 
   const mainStart = new Date(startInput.value);
   const mainEnd = new Date(endInput.value);
   const totalDuration = mainEnd - mainStart;
 
-  // To handle overlapping, track offset per left %
-  const offsets = {};
-
   milestones.forEach(ms => {
-    // Helper to prevent exact overlap
     const startPerc = ((ms.start - mainStart) / totalDuration) * 100;
     const endPerc = ((ms.end - mainStart) / totalDuration) * 100;
 
-    function createFlag(perc, label) {
-      const flag = document.createElement("div");
-      flag.classList.add("flag","ms-flag");
-      let topOffset = offsets[perc.toFixed(2)] || 0;
-      offsets[perc.toFixed(2)] = topOffset + 20; // next flag 20px below
-      flag.style.left = perc + "%";
-      flag.style.top = topOffset + "px";
-      flag.style.backgroundColor = ms.color;
-      flag.innerHTML = `<span class="flag-tooltip">${label}</span>🚩`;
-      progressContainer.appendChild(flag);
+    function createDot(perc, label) {
+      const dot = document.createElement("div");
+      dot.classList.add("ms-dot");
+      dot.style.left = perc + "%";
+      dot.style.backgroundColor = ms.color;
+      dot.style.top = "0px";
+      dot.title = label; // tooltip
+      progressContainer.appendChild(dot);
     }
 
-    createFlag(startPerc, `${ms.title} Start: ${ms.start.toDateString()}`);
-    createFlag(endPerc, `${ms.title} End: ${ms.end.toDateString()}`);
+    createDot(startPerc, `${ms.title} Start: ${ms.start.toDateString()}`);
+    createDot(endPerc, `${ms.title} End: ${ms.end.toDateString()}`);
   });
 }
+
+// --- Show next milestone on click ---
+countdownDiv.addEventListener("click", ()=>{
+  if(milestones.length===0) return;
+
+  showNextMilestoneOnly = !showNextMilestoneOnly;
+
+  const now = new Date();
+  let nextMs = null;
+
+  if(showNextMilestoneOnly){
+    for(let ms of milestones){
+      if(ms.start>now){
+        if(!nextMs || ms.start<nextMs.start) nextMs=ms;
+      }
+    }
+  }
+
+  document.querySelectorAll(".ms-dot").forEach(dot=>{
+    if(!showNextMilestoneOnly) dot.style.display="block";
+    else {
+      const perc = ((nextMs.start - new Date(startInput.value)) / (new Date(endInput.value)-new Date(startInput.value)))*100;
+      if(parseFloat(dot.style.left)===perc) dot.style.display="block";
+      else dot.style.display="none";
+    }
+  });
+});
