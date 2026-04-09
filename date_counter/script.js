@@ -27,15 +27,27 @@ let countdownInterval;
 
 // Start Button
 startBtn.addEventListener('click', () => {
+  console.log("Start button clicked"); // DEBUG
+
   const startDate = new Date(startInput.value);
   const endDate = new Date(endInput.value);
-  const title = titleInput.value || "Countdown Streak";
-  const quote = quoteInput.value || "";
 
-  if(!startInput.value || !endInput.value) {
+  if (!startInput.value || !endInput.value) {
     alert("Please enter start and end dates!");
     return;
   }
+
+  inputSection.style.display = "none";
+  counterSection.style.display = "block";
+
+  counterTitle.textContent = titleInput.value || "Countdown";
+  displayStart.textContent = startDate.toDateString();
+  displayEnd.textContent = endDate.toDateString();
+  displayQuote.textContent = quoteInput.value || "";
+
+  updateCountdown(startDate, endDate);
+  countdownInterval = setInterval(() => updateCountdown(startDate, endDate), 1000);
+});
 
   // Show counter section
   inputSection.style.display = "none";
