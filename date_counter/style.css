@@ -1,85 +1,102 @@
-/* Dark Notion style */
 body {
   margin: 0;
   font-family: Arial, sans-serif;
   background: #191919;
   color: white;
+
   display: flex;
   justify-content: center;
-  align-items: flex-start;
-  padding: 20px;
+  align-items: center;
   min-height: 100vh;
 }
 
+/* Main container */
 .container {
-  max-width: 700px;
-  width: 100%;
+  width: 90%;
+  max-width: 900px;
   text-align: center;
   background: #1f1f1f;
-  border-radius: 20px;
-  padding: 30px;
-  box-sizing: border-box;
+  border-radius: 25px;
+  padding: 40px 20px;
 }
 
 /* Inputs */
 input, textarea {
   width: 80%;
-  padding: 10px;
+  padding: 12px;
   margin: 10px 0;
-  border-radius: 10px;
+  border-radius: 12px;
   border: none;
   font-size: 16px;
 }
 
+/* Button */
 button {
-  padding: 10px 20px;
-  margin-top: 15px;
+  padding: 12px 25px;
   border: none;
-  border-radius: 12px;
+  border-radius: 15px;
   cursor: pointer;
   font-weight: bold;
-  background: #ff6a00;
+  background: linear-gradient(135deg, #ff6a00, #ee0979);
   color: white;
   font-size: 16px;
   transition: 0.3s;
 }
 
 button:hover {
-  background: #ee0979;
+  transform: scale(1.05);
 }
 
-/* Countdown */
+/* Countdown row */
 #countdown {
   display: flex;
-  flex-wrap: wrap;
   justify-content: center;
-  gap: 15px;
-  margin-top: 20px;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 30px;
 }
 
+/* Panels */
 #countdown div {
-  background: #333;
+  background: rgba(255,255,255,0.05);
+  backdrop-filter: blur(10px);
   padding: 15px;
   border-radius: 15px;
-  min-width: 100px;
+  min-width: 90px;
+
+  transition: 0.3s;
 }
 
+/* Hover animation */
+#countdown div:hover {
+  transform: translateY(-5px) scale(1.05);
+}
+
+/* Numbers */
 #countdown span {
-  font-size: 24px;
+  font-size: 28px;
   font-weight: bold;
   display: block;
 }
 
-/* Dates display */
+/* Dates */
 .dates {
   margin-top: 10px;
-  font-size: 14px;
-  opacity: 0.8;
+  font-size: 13px;
+  opacity: 0.7;
 }
 
-/* Quote */
+/* Title */
+#counter-title {
+  margin-bottom: 10px;
+}
+
+/* Quote styling */
 #display-quote {
-  margin-top: 20px;
+  margin-top: 25px;
   font-style: italic;
-  opacity: 0.9;
+  font-size: 16px;
+  opacity: 0.85;
+  padding: 10px 20px;
+  border-left: 3px solid #ff6a00;
 }
