@@ -28,6 +28,7 @@ const runner = document.querySelector(".runner");
 const progressContainer = document.querySelector(".progress-container");
 
 let countdownInterval;
+let milestones = [];
 
 // Number animation
 function animateValue(element, value){
@@ -64,7 +65,7 @@ startBtn.addEventListener('click', () => {
   // Render start/end flags
   renderStartEndFlags();
 
-  // Render any milestones
+  // Render milestones
   renderMilestones();
 
   // Start countdown
@@ -135,19 +136,24 @@ function updateCountdown(start,end){
 function renderStartEndFlags(){
   if(!progressContainer) return;
   
-  // Remove old flags first
+  // Remove old main flags first
   document.querySelectorAll(".flag-start, .flag-end").forEach(f=>f.remove());
 
+  const mainStart = new Date(startInput.value);
+  const mainEnd = new Date(endInput.value);
+
+  // Start flag
   const startFlag = document.createElement("div");
   startFlag.classList.add("flag","flag-start");
   startFlag.style.left = "0%";
-  startFlag.innerHTML = `<span class="flag-tooltip">Start: ${new Date(startInput.value).toDateString()}</span>🚩`;
+  startFlag.innerHTML = `<span class="flag-tooltip">Start: ${mainStart.toDateString()}</span>🚩`;
   progressContainer.appendChild(startFlag);
 
+  // End flag
   const endFlag = document.createElement("div");
   endFlag.classList.add("flag","flag-end");
   endFlag.style.left = "100%";
-  endFlag.innerHTML = `<span class="flag-tooltip">End: ${new Date(endInput.value).toDateString()}</span>🚩`;
+  endFlag.innerHTML = `<span class="flag-tooltip">End: ${mainEnd.toDateString()}</span>🚩`;
   progressContainer.appendChild(endFlag);
 }
 
@@ -159,8 +165,6 @@ const msTitle = document.getElementById("ms-title");
 const msStart = document.getElementById("ms-start");
 const msEnd = document.getElementById("ms-end");
 const msSave = document.getElementById("ms-save");
-
-let milestones = [];
 
 // Open/close modal
 addMsBtn.addEventListener("click", ()=>modal.style.display="flex");
@@ -203,13 +207,20 @@ function renderMilestones(){
   const totalDuration = mainEnd - mainStart;
 
   milestones.forEach(ms => {
-    const msPerc = ((ms.start - mainStart) / totalDuration) * 100;
+    // Start flag
+    const startPerc = ((ms.start - mainStart) / totalDuration) * 100;
+    const startFlag = document.createElement("div");
+    startFlag.classList.add("flag","ms-flag");
+    startFlag.style.left = startPerc + "%";
+    startFlag.innerHTML = `<span class="flag-tooltip">${ms.title} Start: ${ms.start.toDateString()}</span>🚩`;
+    progressContainer.appendChild(startFlag);
 
-    const flag = document.createElement("div");
-    flag.classList.add("flag","ms-flag");
-    flag.style.left = msPerc + "%";
-    flag.innerHTML = `<span class="flag-tooltip">${ms.title}\n${ms.start.toDateString()}</span>🚩`;
-
-    progressContainer.appendChild(flag);
+    // End flag
+    const endPerc = ((ms.end - mainStart) / totalDuration) * 100;
+    const endFlag = document.createElement("div");
+    endFlag.classList.add("flag","ms-flag");
+    endFlag.style.left = endPerc + "%";
+    endFlag.innerHTML = `<span class="flag-tooltip">${ms.title} End: ${ms.end.toDateString()}</span>🚩`;
+    progressContainer.appendChild(endFlag);
   });
 }
