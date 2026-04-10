@@ -192,24 +192,39 @@ button:hover { transform: scale(1.05); }
 .flag-end { background: transparent; }
 
 /* PIN STYLE */
-.ms-pin {
+.flag {
   position: absolute;
-  transform: translateX(-50%);
+  width: 0;
+  height: 0;
   cursor: pointer;
+}
+
+.flag-anchor {
+  position: absolute;
+  left: 0;
+  top: 0;
+  transform: translate(-50%, -55%);
+  font-size: 18px;
+  line-height: 1;
+}
+
+.ms-pin {
+  width: 0;
+  height: 0;
 }
 
 .pin-line {
   width: 2px;
-  height: 15px;
-  background: white;
-  margin: auto;
+  height: 16px;
+  margin: 0 auto;
+  border-radius: 999px;
 }
 
 .pin-dot {
-  width: 10px;
-  height: 10px;
+  width: 12px;
+  height: 12px;
   border-radius: 50%;
-  margin: auto;
+  margin: 0 auto;
 }
 
 /* Runner animation */
