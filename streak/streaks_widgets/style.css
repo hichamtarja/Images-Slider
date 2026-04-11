@@ -1,0 +1,69 @@
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: #191919;
+  color: white;
+  min-height: 100vh;
+}
+
+body.widget-page {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+}
+
+.container {
+  text-align: center;
+  padding: 20px;
+  border-radius: 20px;
+  background: #1f1f1f;
+  width: min(340px, calc(100vw - 32px));
+}
+
+.back-btn {
+  position: absolute;
+  top: 15px;
+  left: 15px;
+  color: #aaa;
+  text-decoration: none;
+  font-size: 18px;
+}
+
+.back-btn:hover {
+  color: white;
+}
+
+#counter {
+  font-size: 70px;
+  margin: 20px 0;
+  transition: 0.3s;
+}
+
+.buttons button {
+  margin: 5px;
+  padding: 10px 15px;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  background: #333;
+  color: white;
+}
+
+.buttons button:hover {
+  background: #555;
+}
+
+#status {
+  margin-top: 15px;
+  font-size: 14px;
+  opacity: 0.8;
+}
+
+.editable-title {
+  cursor: pointer;
+}
+
+.editable-title:hover {
+  opacity: 0.7;
+}
