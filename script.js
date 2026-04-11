@@ -1,3 +1,7 @@
+window.addEventListener("pageshow", () => {
+  location.reload();
+});
+
 // Navigate with animation + ripple
 function goTo(event, url) {
   createRipple(event);
