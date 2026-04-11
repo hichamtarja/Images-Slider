@@ -1,19 +1,97 @@
-/* GLOBAL PAGE */
 body {
   margin: 0;
   font-family: Arial, sans-serif;
   background: #191919;
   color: white;
   min-height: 100vh;
+  box-sizing: border-box;
+}
 
+/* Dashboard page */
+body.dashboard-page {
+  padding: 40px 20px;
+}
+
+.dashboard {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.subtitle {
+  opacity: 0.75;
+  margin-top: -10px;
+  margin-bottom: 20px;
+}
+
+.primary-btn {
+  padding: 12px 18px;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  background: linear-gradient(135deg, #ff6a00, #ee0979);
+  color: white;
+  font-weight: bold;
+  margin-bottom: 24px;
+}
+
+.widget-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 14px;
+}
+
+.widget-card {
+  background: #1f1f1f;
+  border-radius: 18px;
+  padding: 18px;
+  border: 1px solid rgba(255,255,255,0.06);
+  cursor: pointer;
+  transition: transform 0.2s ease, background 0.2s ease;
+}
+
+.widget-card:hover {
+  transform: translateY(-3px);
+  background: #252525;
+}
+
+.widget-card h3 {
+  margin: 0 0 8px 0;
+}
+
+.widget-card p {
+  margin: 0;
+  opacity: 0.75;
+  font-size: 14px;
+}
+
+.widget-actions {
+  margin-top: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.small-btn {
+  padding: 8px 10px;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  background: #333;
+  color: white;
+}
+
+.small-btn:hover {
+  background: #555;
+}
+
+/* Widget page */
+body.widget-page {
   display: flex;
   justify-content: center;
   align-items: center;
-
-  position: relative; /* needed for back button */
+  position: relative;
 }
 
-/* WIDGET CONTAINER */
 .container {
   text-align: center;
   padding: 20px;
@@ -22,14 +100,25 @@ body {
   width: min(340px, calc(100vw - 32px));
 }
 
-/* COUNTER */
+.back-btn {
+  position: absolute;
+  top: 15px;
+  left: 15px;
+  color: #aaa;
+  text-decoration: none;
+  font-size: 18px;
+}
+
+.back-btn:hover {
+  color: white;
+}
+
 #counter {
   font-size: 70px;
   margin: 20px 0;
   transition: 0.3s;
 }
 
-/* BUTTONS */
 .buttons button {
   margin: 5px;
   padding: 10px 15px;
@@ -44,28 +133,12 @@ body {
   background: #555;
 }
 
-/* STATUS TEXT */
 #status {
   margin-top: 15px;
   font-size: 14px;
   opacity: 0.8;
 }
 
-/* BACK BUTTON (TOP LEFT) */
-.back-btn {
-  position: absolute;
-  top: 15px;
-  left: 15px;
-  color: #aaa;
-  text-decoration: none;
-  font-size: 18px;
-}
-
-.back-btn:hover {
-  color: white;
-}
-
-/* EDITABLE TITLE */
 .editable-title {
   cursor: pointer;
 }
