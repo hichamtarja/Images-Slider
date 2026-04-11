@@ -1,7 +1,6 @@
 const STORAGE_KEY = "date_widget_list";
 const currentWidgetId = new URLSearchParams(window.location.search).get("id");
 
-// Elements
 const inputSection = document.getElementById('input-section');
 const counterSection = document.getElementById('counter-section');
 
@@ -46,8 +45,6 @@ const msSave = document.getElementById('ms-save');
 let countdownInterval = null;
 let milestones = [];
 let showingMilestoneView = false;
-
-// -------------------- STORAGE --------------------
 
 function getWidgets() {
   try {
@@ -107,24 +104,6 @@ function deserializeMilestones(list) {
   }));
 }
 
-// -------------------- INITIAL LOAD --------------------
-
-const savedWidget = getCurrentWidget();
-if (savedWidget) {
-  if (savedWidget.title) titleInput.value = savedWidget.title;
-  if (savedWidget.quote) quoteInput.value = savedWidget.quote;
-  if (savedWidget.startDate) startInput.value = savedWidget.startDate;
-  if (savedWidget.endDate) endInput.value = savedWidget.endDate;
-  milestones = deserializeMilestones(savedWidget.milestones);
-}
-
-displayTitle.style.display = 'none';
-displayQuote.style.display = 'none';
-injectRunnerAnimationStyle();
-applyToolsVisibility(localStorage.getItem("date_counter_tools_hidden") === "true");
-
-// -------------------- UTILITIES --------------------
-
 function animateValue(element, value) {
   element.classList.add('tick');
   setTimeout(() => element.classList.remove('tick'), 300);
@@ -180,6 +159,32 @@ function injectRunnerAnimationStyle() {
   document.head.appendChild(style);
 }
 
+function ensureMilestoneView() {
+  let view = document.getElementById('milestone-view');
+
+  if (!view) {
+    view = document.createElement('div');
+    view.id = 'milestone-view';
+    view.addEventListener('click', toggleMilestoneView);
+    countdownDisplay.insertAdjacentElement('beforebegin', view);
+  }
+
+  return view;
+}
+
+function ensureDeadlineMessage() {
+  let msg = document.getElementById('deadline-message');
+
+  if (!msg) {
+    msg = document.createElement('div');
+    msg.id = 'deadline-message';
+    msg.style.display = 'none';
+    countdownDisplay.insertAdjacentElement('beforebegin', msg);
+  }
+
+  return msg;
+}
+
 function saveCurrentState() {
   saveCurrentWidget({
     title: titleInput.value.trim(),
@@ -189,8 +194,6 @@ function saveCurrentState() {
     milestones: serializeMilestones(milestones)
   });
 }
-
-// -------------------- EDITABLE TITLE / QUOTE --------------------
 
 function bindEditableTitle() {
   displayTitle.onclick = () => {
@@ -224,8 +227,6 @@ function bindEditableQuote() {
   };
 }
 
-// -------------------- FLAGS --------------------
-
 function renderStartEndFlags() {
   if (!progressContainer) return;
 
@@ -250,8 +251,6 @@ function renderStartEndFlags() {
   `;
   progressContainer.appendChild(endFlag);
 }
-
-// -------------------- MILESTONES --------------------
 
 function renderMilestones() {
   if (!progressContainer) return;
@@ -287,10 +286,6 @@ function createMilestonePin(percent, ms, kind, stackCounts) {
 
   const pin = document.createElement('div');
   pin.className = 'ms-pin';
-  pin.title =
-    kind === 'start'
-      ? `${ms.title} Start: ${ms.start.toDateString()}`
-      : `${ms.title} End: ${ms.end.toDateString()}`;
 
   Object.assign(pin.style, {
     left: `calc(${percent}% + 5px)`,
@@ -307,21 +302,6 @@ function createMilestonePin(percent, ms, kind, stackCounts) {
   `;
 
   progressContainer.appendChild(pin);
-}
-
-// -------------------- MILESTONE VIEW (NEXT MILESTONE) --------------------
-
-function ensureMilestoneView() {
-  let view = document.getElementById('milestone-view');
-
-  if (!view) {
-    view = document.createElement('div');
-    view.id = 'milestone-view';
-    view.addEventListener('click', toggleMilestoneView);
-    countdownDisplay.insertAdjacentElement('beforebegin', view);
-  }
-
-  return view;
 }
 
 function getNextMilestone(now = new Date()) {
@@ -397,21 +377,6 @@ function toggleMilestoneView() {
   }
 }
 
-// -------------------- COUNTDOWN --------------------
-
-function ensureDeadlineMessage() {
-  let msg = document.getElementById('deadline-message');
-
-  if (!msg) {
-    msg = document.createElement('div');
-    msg.id = 'deadline-message';
-    msg.style.display = 'none';
-    countdownDisplay.insertAdjacentElement('beforebegin', msg);
-  }
-
-  return msg;
-}
-
 function updateCountdown(start, end) {
   const now = new Date();
   let diff = end - now;
@@ -465,8 +430,6 @@ function updateCountdown(start, end) {
   }
 }
 
-// -------------------- TOOLS TOGGLE --------------------
-
 function applyToolsVisibility(hidden) {
   [addMsBtn, viewMsBtn].forEach(btn => {
     if (btn) btn.style.display = hidden ? 'none' : 'inline-block';
@@ -476,16 +439,6 @@ function applyToolsVisibility(hidden) {
     toggleToolsBtn.textContent = hidden ? "Show Tools" : "Hide Tools";
   }
 }
-
-if (toggleToolsBtn) {
-  toggleToolsBtn.addEventListener('click', () => {
-    const hidden = !(localStorage.getItem("date_counter_tools_hidden") === "true");
-    localStorage.setItem("date_counter_tools_hidden", String(hidden));
-    applyToolsVisibility(hidden);
-  });
-}
-
-// -------------------- MILESTONE LIST WINDOW --------------------
 
 function showMilestoneList() {
   const overlay = document.createElement('div');
@@ -539,15 +492,16 @@ function showMilestoneList() {
       const item = document.createElement('div');
       Object.assign(item.style, {
         marginBottom: '10px',
-        padding: '10px',
+        padding: '10px 10px 42px',
         background: '#333',
-        borderRadius: '10px'
+        borderRadius: '10px',
+        position: 'relative'
       });
 
       item.innerHTML = `
         <strong>${escapeHtml(ms.title)}</strong><br>
         <small>${ms.start.toDateString()} → ${ms.end.toDateString()}</small><br>
-        <button style="margin-top:6px;" data-del="${index}">Delete</button>
+        <button class="ms-delete-btn" data-del="${index}">Delete</button>
       `;
 
       panel.appendChild(item);
@@ -573,9 +527,7 @@ function showMilestoneList() {
   });
 }
 
-// -------------------- START --------------------
-
-startBtn.addEventListener('click', () => {
+function startCounter() {
   const startDate = new Date(startInput.value);
   const endDate = new Date(endInput.value);
 
@@ -634,62 +586,101 @@ startBtn.addEventListener('click', () => {
 
   saveCurrentState();
 
+  runner.style.left = '0%';
+  progressFill.style.width = '0%';
+
   updateCountdown(startDate, endDate);
 
   clearInterval(countdownInterval);
   countdownInterval = setInterval(() => {
     updateCountdown(startDate, endDate);
   }, 1000);
-});
+}
 
-// -------------------- RESET --------------------
+function resetCounter() {
+  clearInterval(countdownInterval);
 
-if (resetBtn) {
-  resetBtn.addEventListener('click', () => {
-    clearInterval(countdownInterval);
+  inputSection.style.display = 'block';
+  counterSection.style.display = 'none';
 
+  startInput.value = '';
+  endInput.value = '';
+  quoteInput.value = '';
+  titleInput.value = '';
+
+  displayTitle.textContent = '';
+  displayTitle.dataset.raw = '';
+  displayTitle.style.display = 'none';
+
+  displayQuote.textContent = '';
+  displayQuote.dataset.raw = '';
+  displayQuote.style.display = 'none';
+
+  milestones = [];
+  showingMilestoneView = false;
+
+  document.querySelectorAll('.flag-start, .flag-end, .ms-pin').forEach(el => el.remove());
+
+  const milestoneView = document.getElementById('milestone-view');
+  if (milestoneView) {
+    milestoneView.style.display = 'none';
+    milestoneView.innerHTML = '';
+  }
+
+  const deadlineMessage = document.getElementById('deadline-message');
+  if (deadlineMessage) {
+    deadlineMessage.style.display = 'none';
+    deadlineMessage.innerHTML = '';
+  }
+
+  progressFill.style.width = '0%';
+  runner.style.left = '0%';
+  countdownDisplay.innerHTML = '';
+
+  saveCurrentState();
+}
+
+function initFromSavedWidget() {
+  const savedWidget = getCurrentWidget();
+
+  if (savedWidget) {
+    titleInput.value = savedWidget.title || '';
+    quoteInput.value = savedWidget.quote || '';
+    startInput.value = savedWidget.startDate || '';
+    endInput.value = savedWidget.endDate || '';
+    milestones = deserializeMilestones(savedWidget.milestones || []);
+  }
+
+  applyToolsVisibility(localStorage.getItem("date_counter_tools_hidden") === "true");
+
+  if (savedWidget && savedWidget.startDate && savedWidget.endDate) {
+    startCounter();
+  } else {
     inputSection.style.display = 'block';
     counterSection.style.display = 'none';
+  }
+}
 
-    startInput.value = '';
-    endInput.value = '';
-    quoteInput.value = '';
-    titleInput.value = '';
+injectRunnerAnimationStyle();
+initFromSavedWidget();
 
-    displayTitle.textContent = '';
-    displayTitle.dataset.raw = '';
-    displayTitle.style.display = 'none';
+startBtn.addEventListener('click', startCounter);
 
-    displayQuote.textContent = '';
-    displayQuote.dataset.raw = '';
-    displayQuote.style.display = 'none';
+if (resetBtn) {
+  resetBtn.addEventListener('click', resetCounter);
+}
 
-    milestones = [];
-    showingMilestoneView = false;
-
-    document.querySelectorAll('.flag-start, .flag-end, .ms-pin').forEach(el => el.remove());
-
-    const milestoneView = document.getElementById('milestone-view');
-    if (milestoneView) {
-      milestoneView.style.display = 'none';
-      milestoneView.innerHTML = '';
-    }
-
-    const deadlineMessage = document.getElementById('deadline-message');
-    if (deadlineMessage) {
-      deadlineMessage.style.display = 'none';
-      deadlineMessage.innerHTML = '';
-    }
-
-    progressFill.style.width = '0%';
-    runner.style.left = '0%';
-    countdownDisplay.innerHTML = '';
-
-    saveCurrentState();
+if (toggleToolsBtn) {
+  toggleToolsBtn.addEventListener('click', () => {
+    const hidden = !(localStorage.getItem("date_counter_tools_hidden") === "true");
+    localStorage.setItem("date_counter_tools_hidden", String(hidden));
+    applyToolsVisibility(hidden);
   });
 }
 
-// -------------------- MODAL --------------------
+if (viewMsBtn) {
+  viewMsBtn.addEventListener('click', showMilestoneList);
+}
 
 if (addMsBtn && modal && closeModal && msTitle && msStart && msEnd && msSave) {
   addMsBtn.addEventListener('click', () => {
@@ -742,8 +733,4 @@ if (addMsBtn && modal && closeModal && msTitle && msStart && msEnd && msSave) {
   });
 }
 
-// -------------------- VIEW MILESTONES BUTTON --------------------
-
-if (viewMsBtn) {
-  viewMsBtn.addEventListener('click', showMilestoneList);
-}
+countdownDisplay.addEventListener('click', toggleMilestoneView);
