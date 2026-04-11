@@ -191,7 +191,6 @@ button:hover { transform: scale(1.05); }
 .flag-start { background: transparent; }
 .flag-end { background: transparent; }
 
-/* PIN STYLE */
 .flag {
   position: absolute;
   width: 0;
@@ -203,7 +202,7 @@ button:hover { transform: scale(1.05); }
   position: absolute;
   left: 0;
   top: 0;
-  transform: translate(-50%, -55%);
+  transform: translate(-50%, -50%);
   font-size: 18px;
   line-height: 1;
 }
@@ -229,5 +228,45 @@ button:hover { transform: scale(1.05); }
 
 /* Runner animation */
 .runner {
+  position: absolute;
+  top: -22px;
+  width: 22px;
+  height: 22px;
+  pointer-events: none;
   transition: left 1s linear, transform 0.3s ease;
+  animation: runnerBounce 0.7s ease-in-out infinite alternate;
 }
+
+.runner-head {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: white;
+  left: 8px;
+  top: 0;
+}
+
+.runner-body {
+  position: absolute;
+  width: 2px;
+  height: 9px;
+  background: white;
+  left: 10px;
+  top: 5px;
+}
+
+.runner-arm,
+.runner-leg {
+  position: absolute;
+  width: 2px;
+  height: 8px;
+  background: white;
+  transform-origin: top center;
+}
+
+.runner-arm.front { left: 12px; top: 6px; transform: rotate(35deg); }
+.runner-arm.back  { left: 8px;  top: 6px; transform: rotate(-25deg); }
+
+.runner-leg.front { left: 12px; top: 12px; transform: rotate(-25deg); }
+.runner-leg.back  { left: 8px;  top: 12px; transform: rotate(35deg); }
