@@ -144,22 +144,6 @@ button:hover {
   100% { box-shadow: 0 0 5px red; }
 }
 
-.dates {
-  margin-top: 14px;
-  font-size: 13px;
-  opacity: 0.7;
-}
-
-#display-quote {
-  margin-top: 25px;
-  font-style: italic;
-  font-size: 16px;
-  opacity: 0.85;
-  padding: 10px 20px;
-  border-left: 3px solid #ff6a00;
-  cursor: pointer;
-}
-
 .progress-container {
   margin-top: 20px;
   position: relative;
@@ -342,4 +326,12 @@ button:hover {
   text-align: center;
   cursor: pointer;
   user-select: none;
+}
+
+.ms-delete-btn {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  padding: 6px 10px;
+  font-size: 11px;
 }
