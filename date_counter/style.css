@@ -91,3 +91,15 @@ font-size: 12px;
 .small-btn:hover {
 background: #555;
 }
+
+.progress-container {
+  margin-top: 30px;
+  position: relative;
+  height: 60px; /* increased for visibility */
+  }
+
+.flag {
+  position: absolute;
+  top: 0;
+  z-index: 50;
+  }
