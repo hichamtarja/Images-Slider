@@ -1,0 +1,151 @@
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: #191919;
+  color: white;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+}
+
+/* Main container */
+.container {
+  width: 90%;
+  max-width: 900px;
+  text-align: center;
+  background: #1f1f1f;
+  border-radius: 25px;
+  padding: 40px 20px;
+}
+
+/* Inputs */
+input, textarea {
+  width: 80%;
+  padding: 12px;
+  margin: 10px 0;
+  border-radius: 12px;
+  border: none;
+  font-size: 16px;
+  background: #2a2a2a;
+  color: white;
+}
+
+/* Buttons */
+button {
+  padding: 12px 25px;
+  border: none;
+  border-radius: 15px;
+  cursor: pointer;
+  font-weight: bold;
+  background: linear-gradient(135deg, #ff6a00, #ee0979);
+  color: white;
+  font-size: 16px;
+  transition: 0.3s;
+}
+
+button:hover {
+  transform: scale(1.05);
+}
+
+/* Countdown grid */
+#countdown {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 30px;
+}
+
+/* Panels */
+#countdown div {
+  background: rgba(255,255,255,0.05);
+  padding: 15px;
+  border-radius: 15px;
+  min-width: 90px;
+}
+
+/* Numbers */
+#countdown span {
+  font-size: 28px;
+  font-weight: bold;
+  display: block;
+}
+
+/* Quote */
+#display-quote {
+  margin-top: 25px;
+  font-style: italic;
+  opacity: 0.85;
+}
+
+/* Progress bar */
+.progress-container {
+  margin-top: 20px;
+  position: relative;
+  height: 30px;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 10px;
+  background: #333;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #ff6a00, #ee0979);
+  transition: width 1s linear;
+}
+
+/* Runner */
+.runner {
+  position: absolute;
+  top: -23px;
+  width: 30px;
+  transform: translateX(-50%);
+  transition: left 1s linear;
+}
+
+/* Milestones */
+.milestone-btns {
+  margin-top: 15px;
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.small-btn {
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+  background: #333;
+  color: white;
+}
+
+.small-btn:hover {
+  background: #555;
+}
+
+/* Modal */
+.modal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.7);
+  justify-content: center;
+  align-items: center;
+}
+
+.modal-content {
+  background: #222;
+  padding: 20px;
+  border-radius: 15px;
+  width: 300px;
+}
