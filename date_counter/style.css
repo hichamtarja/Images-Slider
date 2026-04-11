@@ -202,9 +202,9 @@ button:hover { transform: scale(1.05); }
   position: absolute;
   left: 0;
   top: 0;
-  transform: translate(-50%, -50%);
+  transform: translate(-20%, -47%);
   font-size: 18px;
-  line-height: 1;
+  line-height: 5;
 }
 
 .ms-pin {
@@ -220,6 +220,7 @@ button:hover { transform: scale(1.05); }
 }
 
 .pin-dot {
+  transform: translateX(-41%);
   width: 12px;
   height: 12px;
   border-radius: 50%;
@@ -229,8 +230,8 @@ button:hover { transform: scale(1.05); }
 /* Runner animation */
 .runner {
   position: absolute;
-  top: -28px;              /* adjust vertical position */
-  width: 40px;             /* control size */
+  top: -23px;              /* adjust vertical position */
+  width: 31px;             /* control size */
   height: auto;
   transform: translateX(-50%);
   pointer-events: none;
