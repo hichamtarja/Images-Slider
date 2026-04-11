@@ -229,44 +229,10 @@ button:hover { transform: scale(1.05); }
 /* Runner animation */
 .runner {
   position: absolute;
-  top: -22px;
-  width: 22px;
-  height: 22px;
+  top: -28px;              /* adjust vertical position */
+  width: 40px;             /* control size */
+  height: auto;
+  transform: translateX(-50%);
   pointer-events: none;
-  transition: left 1s linear, transform 0.3s ease;
-  animation: runnerBounce 0.7s ease-in-out infinite alternate;
+  transition: left 1s linear;
 }
-
-.runner-head {
-  position: absolute;
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: white;
-  left: 8px;
-  top: 0;
-}
-
-.runner-body {
-  position: absolute;
-  width: 2px;
-  height: 9px;
-  background: white;
-  left: 10px;
-  top: 5px;
-}
-
-.runner-arm,
-.runner-leg {
-  position: absolute;
-  width: 2px;
-  height: 8px;
-  background: white;
-  transform-origin: top center;
-}
-
-.runner-arm.front { left: 12px; top: 6px; transform: rotate(35deg); }
-.runner-arm.back  { left: 8px;  top: 6px; transform: rotate(-25deg); }
-
-.runner-leg.front { left: 12px; top: 12px; transform: rotate(-25deg); }
-.runner-leg.back  { left: 8px;  top: 12px; transform: rotate(35deg); }
