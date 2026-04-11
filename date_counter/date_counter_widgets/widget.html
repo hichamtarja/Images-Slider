@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Date Counter Widget</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<a href="index.html" class="back-btn">←</a>
+
+<div class="container">
+
+<!-- INPUT SECTION -->
+<div id="input-section">
+  <h1 id="counter-title">Date Counter</h1>
+
+  <input type="date" id="start-date">
+  <input type="date" id="end-date">
+
+  <textarea id="quote" placeholder="Enter quote..."></textarea>
+
+  <button id="start-btn">Start Counter</button>
+</div>
+
+<!-- COUNTER SECTION -->
+<div id="counter-section" style="display:none;">
+
+  <h1 id="display-title"></h1>
+
+  <div class="dates">
+    <p>Start: <span id="display-start"></span></p>
+    <p>End: <span id="display-end"></span></p>
+  </div>
+
+  <!-- PROGRESS -->
+  <div class="progress-container">
+    <img src="runner.gif" class="runner" id="runner">
+    <div class="progress-bar">
+      <div class="progress-fill" id="progress-fill"></div>
+    </div>
+  </div>
+
+  <!-- CONTROLS (we will enhance in next step) -->
+  <div class="controls">
+    <button id="add-milestone-btn">+ Milestone</button>
+    <button id="view-milestones-btn">View Milestones</button>
+    <button id="toggle-tools-btn">Hide Tools</button>
+  </div>
+
+  <!-- COUNTER -->
+  <div id="countdown"></div>
+
+  <p id="display-quote"></p>
+
+</div>
+
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
