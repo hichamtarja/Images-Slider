@@ -1,239 +1,93 @@
 body {
-  margin: 0;
-  font-family: Arial, sans-serif;
-  background: #191919;
-  color: white;
-
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 100vh;
+margin: 0;
+font-family: Arial, sans-serif;
+background: #191919;
+color: white;
+min-height: 100vh;
+box-sizing: border-box;
 }
 
-/* Main container */
-.container {
-  width: 90%;
-  max-width: 900px;
-  text-align: center;
-  background: #1f1f1f;
-  border-radius: 25px;
-  padding: 40px 20px;
+/* Dashboard layout */
+body.dashboard-page {
+display: block;
+padding: 40px 60px;
 }
 
-/* Inputs */
-input, textarea {
-  width: 80%;
-  padding: 12px;
-  margin: 10px 0;
-  border-radius: 12px;
-  border: none;
-  font-size: 16px;
+.dashboard {
+width: 100%;
+max-width: none;
+}
+
+h1 {
+margin-bottom: 6px;
+}
+
+.subtitle {
+opacity: 0.75;
+margin-bottom: 25px;
 }
 
 /* Button */
-button {
-  padding: 12px 25px;
-  border: none;
-  border-radius: 15px;
-  cursor: pointer;
-  font-weight: bold;
-  background: linear-gradient(135deg, #ff6a00, #ee0979);
-  color: white;
-  font-size: 16px;
-  transition: 0.3s;
-}
-button:hover { transform: scale(1.05); }
-
-/* Countdown row */
-#countdown {
-  display: flex;
-  justify-content: center;
-  gap: 10px;
-  flex-wrap: wrap;
-  margin-top: 30px;
+.primary-btn {
+padding: 12px 18px;
+border: none;
+border-radius: 12px;
+cursor: pointer;
+background: linear-gradient(135deg, #ff6a00, #ee0979);
+color: white;
+font-weight: bold;
+margin-bottom: 24px;
 }
 
-/* Panels */
-#countdown div {
-  background: rgba(255,255,255,0.05);
-  backdrop-filter: blur(10px);
-  padding: 15px;
-  border-radius: 15px;
-  min-width: 90px;
-  transition: 0.3s;
-  position: relative;
+/* Grid */
+.widget-list {
+display: grid;
+grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+gap: 14px;
 }
 
-/* Panel glow animation */
-.danger {
-  box-shadow: 0 0 15px red;
-  animation: pulse 1s infinite;
-}
-@keyframes pulse {
-  0% { box-shadow: 0 0 5px red; }
-  50% { box-shadow: 0 0 20px red; }
-  100% { box-shadow: 0 0 5px red; }
+/* Card */
+.widget-card {
+background: #1f1f1f;
+border-radius: 18px;
+padding: 18px;
+border: 1px solid rgba(255,255,255,0.06);
+transition: 0.2s ease;
 }
 
-/* Hover animation */
-#countdown div:hover { transform: translateY(-5px) scale(1.05); }
-
-/* Numbers animation */
-#countdown span {
-  font-size: 28px;
-  font-weight: bold;
-  display: block;
-}
-.tick {
-  animation: pop 0.3s ease;
-}
-@keyframes pop {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.3); color: #ff6a00; }
-  100% { transform: scale(1); }
+.widget-card:hover {
+transform: translateY(-4px);
+background: #252525;
 }
 
-/* Dates */
-.dates { margin-top: 10px; font-size: 13px; opacity: 0.7; }
-
-/* Title */
-#counter-title { margin-bottom: 10px; }
-
-/* Quote styling */
-#display-quote {
-  margin-top: 25px;
-  font-style: italic;
-  font-size: 16px;
-  opacity: 0.85;
-  padding: 10px 20px;
-  border-left: 3px solid #ff6a00;
+.widget-card h3 {
+margin: 0 0 8px 0;
 }
 
-/* Progress bar */
-.progress-container { margin-top: 20px; position: relative; height: 30px; }
-.progress-bar {
-  width: 100%;
-  height: 10px;
-  background: #333;
-  border-radius: 10px;
-  overflow: hidden;
-}
-.progress-fill {
-  height: 100%;
-  width: 0%;
-  background: linear-gradient(90deg, #ff6a00, #ee0979);
-  transition: width 1s linear;
-}
-.runner {
-  position: absolute;
-  top: -10px;
-  left: 0%;
-  transition: left 1s linear;
+.widget-card p {
+margin: 0;
+opacity: 0.75;
+font-size: 14px;
 }
 
-/* Modal */
-.modal {
-  display: none;
-  position: fixed;
-  z-index: 999;
-  left: 0; top: 0;
-  width: 100%; height: 100%;
-  background: rgba(0,0,0,0.7);
-  justify-content: center;
-  align-items: center;
-}
-.modal-content {
-  background: #222;
-  padding: 20px;
-  border-radius: 15px;
-  width: 300px;
-  text-align: center;
-  position: relative;
-}
-.modal-content input { width: 80%; margin: 10px 0; padding: 8px; }
-.modal-content button { margin-top: 10px; }
-.modal .close {
-  position: absolute;
-  top: 10px; right: 15px;
-  cursor: pointer;
-  font-size: 20px;
+/* Actions */
+.widget-actions {
+margin-top: 12px;
+display: flex;
+flex-wrap: wrap;
+gap: 8px;
 }
 
-/* Flags */
-.flag {
-  position: absolute;
-  top: -25px;
-  transform: translateX(-50%);
-  cursor: pointer;
-  transition: transform 0.3s;
-}
-.flag:hover .flag-tooltip {
-  opacity: 1;
-  transform: translateX(-50%) translateY(-10px);
-}
-.flag-tooltip {
-  position: absolute;
-  bottom: 100%;
-  left: 50%;
-  transform: translateX(-50%) translateY(0);
-  background: #ff6a00;
-  color: white;
-  padding: 4px 8px;
-  border-radius: 6px;
-  font-size: 12px;
-  opacity: 0;
-  white-space: nowrap;
-  pointer-events: none;
-  transition: all 0.3s;
+.small-btn {
+padding: 8px 10px;
+border: none;
+border-radius: 10px;
+cursor: pointer;
+background: #333;
+color: white;
+font-size: 12px;
 }
 
-/* Start & end flags */
-.flag-start { background: transparent; }
-.flag-end { background: transparent; }
-
-.flag {
-  position: absolute;
-  width: 0;
-  height: 0;
-  cursor: pointer;
-}
-
-.flag-anchor {
-  position: absolute;
-  left: 0;
-  top: 0;
-  transform: translate(-20%, -47%);
-  font-size: 18px;
-  line-height: 5;
-}
-
-.ms-pin {
-  width: 0;
-  height: 0;
-}
-
-.pin-line {
-  width: 2px;
-  height: 16px;
-  margin: 0 auto;
-  border-radius: 999px;
-}
-
-.pin-dot {
-  transform: translateX(-41%);
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  margin: 0 auto;
-}
-
-/* Runner animation */
-.runner {
-  position: absolute;
-  top: -23px;              /* adjust vertical position */
-  width: 31px;             /* control size */
-  height: auto;
-  transform: translateX(-50%);
-  pointer-events: none;
-  transition: left 1s linear;
+.small-btn:hover {
+background: #555;
 }
