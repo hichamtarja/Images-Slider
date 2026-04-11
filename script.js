@@ -1,5 +1,5 @@
 window.addEventListener("pageshow", () => {
-  location.reload();
+  document.body.classList.remove("fade-out");
 });
 
 // Navigate with animation + ripple
