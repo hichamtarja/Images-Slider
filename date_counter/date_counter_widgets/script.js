@@ -1,17 +1,30 @@
-// ================== ELEMENTS ==================
+// =========================
+// ELEMENTS
+// =========================
+
 const inputSection = document.getElementById('input-section');
 const counterSection = document.getElementById('counter-section');
 
 const startBtn = document.getElementById('start-btn');
+const resetBtn = document.getElementById('reset-btn');
 
+const titleInput = document.getElementById('title');
 const startInput = document.getElementById('start-date');
 const endInput = document.getElementById('end-date');
 const quoteInput = document.getElementById('quote');
 
-const displayTitle = document.getElementById('display-title');
+const counterTitle = document.getElementById('counter-title');
 const displayStart = document.getElementById('display-start');
 const displayEnd = document.getElementById('display-end');
 const displayQuote = document.getElementById('display-quote');
+
+const yearsSpan = document.getElementById('years');
+const monthsSpan = document.getElementById('months');
+const weeksSpan = document.getElementById('weeks');
+const daysSpan = document.getElementById('days');
+const hoursSpan = document.getElementById('hours');
+const minutesSpan = document.getElementById('minutes');
+const secondsSpan = document.getElementById('seconds');
 
 const progressFill = document.getElementById('progress-fill');
 const runner = document.querySelector('.runner');
@@ -19,125 +32,75 @@ const progressContainer = document.querySelector('.progress-container');
 const countdownDisplay = document.getElementById('countdown');
 
 const addMsBtn = document.getElementById('add-milestone-btn');
-const viewMsBtn = document.getElementById('view-milestones-btn');
-const toggleBtn = document.getElementById('toggle-tools-btn');
+const modal = document.getElementById('milestone-modal');
+const closeModal = document.querySelector('.modal .close');
+const msTitle = document.getElementById('ms-title');
+const msStart = document.getElementById('ms-start');
+const msEnd = document.getElementById('ms-end');
+const msSave = document.getElementById('ms-save');
 
-// ================== STATE ==================
 let countdownInterval = null;
 let milestones = [];
 let showingMilestoneView = false;
 
-// ================== TIME LOGIC ==================
+// =========================
+// UTILITIES
+// =========================
+
+function animateValue(element, value) {
+  element.classList.add('tick');
+  setTimeout(() => element.classList.remove('tick'), 300);
+  element.textContent = value;
+}
+
 function getTimeParts(ms) {
-  const total = Math.max(0, Math.floor(ms / 1000));
+  const totalSeconds = Math.max(0, Math.floor(ms / 1000));
 
   return {
-    years: Math.floor(total / (365 * 24 * 3600)),
-    months: Math.floor((total % (365 * 24 * 3600)) / (30 * 24 * 3600)),
-    weeks: Math.floor((total % (30 * 24 * 3600)) / (7 * 24 * 3600)),
-    days: Math.floor((total % (7 * 24 * 3600)) / (24 * 3600)),
-    hours: Math.floor((total % (24 * 3600)) / 3600),
-    minutes: Math.floor((total % 3600) / 60),
-    seconds: total % 60
+    years: Math.floor(totalSeconds / (365 * 24 * 3600)),
+    months: Math.floor((totalSeconds % (365 * 24 * 3600)) / (30 * 24 * 3600)),
+    weeks: Math.floor((totalSeconds % (30 * 24 * 3600)) / (7 * 24 * 3600)),
+    days: Math.floor((totalSeconds % (7 * 24 * 3600)) / (24 * 3600)),
+    hours: Math.floor((totalSeconds % (24 * 3600)) / 3600),
+    minutes: Math.floor((totalSeconds % 3600) / 60),
+    seconds: totalSeconds % 60
   };
 }
 
-// ================== COUNTDOWN ==================
-function updateCountdown(start, end) {
-  const now = new Date();
-  let diff = end - now;
-
-  if (diff <= 0) {
-    diff = 0;
-    clearInterval(countdownInterval);
-  }
-
-  const parts = getTimeParts(diff);
-
-  countdownDisplay.innerHTML = `
-    <div><span>${parts.years}</span> Years</div>
-    <div><span>${parts.months}</span> Months</div>
-    <div><span>${parts.weeks}</span> Weeks</div>
-    <div><span>${parts.days}</span> Days</div>
-    <div><span>${parts.hours}</span> Hours</div>
-    <div><span>${parts.minutes}</span> Minutes</div>
-    <div><span>${parts.seconds}</span> Seconds</div>
-  `;
-
-  const total = end - start;
-  const elapsed = now - start;
-
-  let progress = (elapsed / total) * 100;
-  progress = Math.max(0, Math.min(100, progress));
-
-  progressFill.style.width = progress + '%';
-  runner.style.left = progress + '%';
+function getRandomMilestonePalette() {
+  const hue = Math.floor(Math.random() * 360);
+  return {
+    start: `hsl(${hue}, 85%, 60%)`,
+    end: `hsl(${(hue + 30) % 360}, 85%, 65%)`
+  };
 }
 
-// ================== TITLE EDIT ==================
-function enableTitleEditing() {
-  displayTitle.addEventListener('click', () => {
-    const current = displayTitle.textContent;
+// =========================
+// FLAGS
+// =========================
 
-    const input = document.createElement('input');
-    input.value = current;
-    input.style.textAlign = 'center';
+function renderStartEndFlags() {
+  document.querySelectorAll('.flag-start, .flag-end').forEach(el => el.remove());
 
-    displayTitle.replaceWith(input);
-    input.focus();
+  const start = new Date(startInput.value);
+  const end = new Date(endInput.value);
 
-    function save() {
-      const val = input.value.trim();
+  const startFlag = document.createElement('div');
+  startFlag.className = 'flag flag-start';
+  startFlag.style.left = '0%';
+  startFlag.innerHTML = `🚩<span class="flag-tooltip">${start.toDateString()}</span>`;
+  progressContainer.appendChild(startFlag);
 
-      const h1 = document.createElement('h1');
-      h1.id = 'display-title';
-      h1.textContent = val;
-      if (!val) h1.style.display = 'none';
-
-      input.replaceWith(h1);
-      enableTitleEditing();
-    }
-
-    input.addEventListener('blur', save);
-    input.addEventListener('keydown', e => {
-      if (e.key === 'Enter') input.blur();
-    });
-  });
+  const endFlag = document.createElement('div');
+  endFlag.className = 'flag flag-end';
+  endFlag.style.left = '100%';
+  endFlag.innerHTML = `🚩<span class="flag-tooltip">${end.toDateString()}</span>`;
+  progressContainer.appendChild(endFlag);
 }
 
-// ================== QUOTE EDIT ==================
-function enableQuoteEditing() {
-  displayQuote.addEventListener('click', () => {
-    const current = displayQuote.textContent.replace(/[“”]/g, '');
-
-    const input = document.createElement('textarea');
-    input.value = current;
-
-    displayQuote.replaceWith(input);
-    input.focus();
-
-    function save() {
-      const val = input.value.trim();
-
-      const p = document.createElement('p');
-      p.id = 'display-quote';
-      p.textContent = val ? `“ ${val} ”` : '';
-
-      input.replaceWith(p);
-      enableQuoteEditing();
-    }
-
-    input.addEventListener('blur', save);
-    input.addEventListener('keydown', e => {
-      if (e.key === 'Enter') input.blur();
-    });
-  });
-}
-
-// ================== MILESTONES ==================
-function getRandomColor() {
-  return `hsl(${Math.random() * 360}, 80%, 60%)`;
-}
+// =========================
+// MILESTONES
+// =========================
 
 function renderMilestones() {
   document.querySelectorAll('.ms-pin').forEach(el => el.remove());
@@ -148,127 +111,153 @@ function renderMilestones() {
   const end = new Date(endInput.value);
   const total = end - start;
 
-  milestones.forEach(ms => {
+  milestones.forEach((ms, index) => {
     const percent = ((ms.start - start) / total) * 100;
 
     const pin = document.createElement('div');
     pin.className = 'ms-pin';
-
     pin.style.left = percent + '%';
-    pin.style.background = ms.color;
+
+    pin.innerHTML = `
+      <div class="pin-dot" style="background:${ms.colors.start}"></div>
+      <span class="flag-tooltip">${ms.title}</span>
+    `;
+
+    // DELETE ON CLICK
+    pin.onclick = () => {
+      if (confirm("Delete this milestone?")) {
+        milestones.splice(index, 1);
+        renderMilestones();
+      }
+    };
 
     progressContainer.appendChild(pin);
   });
 }
 
-function deleteMilestone(index) {
-  milestones.splice(index, 1);
-  renderMilestones();
+// =========================
+// COUNTDOWN
+// =========================
+
+function updateCountdown(start, end) {
+  const now = new Date();
+  let diff = end - now;
+
+  if (diff <= 0) diff = 0;
+
+  const t = getTimeParts(diff);
+
+  animateValue(yearsSpan, t.years);
+  animateValue(monthsSpan, t.months);
+  animateValue(weeksSpan, t.weeks);
+  animateValue(daysSpan, t.days);
+  animateValue(hoursSpan, t.hours);
+  animateValue(minutesSpan, t.minutes);
+  animateValue(secondsSpan, t.seconds);
+
+  const progress = Math.min(100, Math.max(0, ((now - start) / (end - start)) * 100));
+
+  progressFill.style.width = progress + '%';
+  runner.style.left = progress + '%';
 }
 
-// ================== MILESTONE MODAL ==================
-function showMilestoneList() {
-  const overlay = document.createElement('div');
+// =========================
+// START
+// =========================
 
-  Object.assign(overlay.style, {
-    position: 'fixed',
-    inset: '0',
-    background: 'rgba(0,0,0,0.7)',
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center'
-  });
-
-  const panel = document.createElement('div');
-
-  Object.assign(panel.style, {
-    background: '#222',
-    padding: '20px',
-    borderRadius: '12px',
-    width: '300px'
-  });
-
-  panel.innerHTML = `<h3>Milestones</h3>`;
-
-  milestones.forEach((ms, i) => {
-    const item = document.createElement('div');
-    item.innerHTML = `
-      ${ms.title}
-      <button data-i="${i}">Delete</button>
-    `;
-    panel.appendChild(item);
-  });
-
-  panel.querySelectorAll('button').forEach(btn => {
-    btn.onclick = () => {
-      deleteMilestone(btn.dataset.i);
-      overlay.remove();
-      showMilestoneList();
-    };
-  });
-
-  overlay.appendChild(panel);
-  document.body.appendChild(overlay);
-
-  overlay.onclick = e => {
-    if (e.target === overlay) overlay.remove();
-  };
-}
-
-// ================== TOGGLE TOOLS ==================
-const TOOLS_KEY = "tools_hidden";
-
-function applyTools(hidden) {
-  [addMsBtn, viewMsBtn].forEach(btn => {
-    if (btn) btn.style.display = hidden ? 'none' : 'inline-block';
-  });
-
-  if (toggleBtn) {
-    toggleBtn.textContent = hidden ? "Show Tools" : "Hide Tools";
-  }
-}
-
-if (toggleBtn) {
-  let hidden = localStorage.getItem(TOOLS_KEY) === "true";
-  applyTools(hidden);
-
-  toggleBtn.onclick = () => {
-    hidden = !hidden;
-    localStorage.setItem(TOOLS_KEY, hidden);
-    applyTools(hidden);
-  };
-}
-
-// ================== EVENTS ==================
 startBtn.addEventListener('click', () => {
-  const start = new Date(startInput.value);
-  const end = new Date(endInput.value);
+  const startDate = new Date(startInput.value);
+  const endDate = new Date(endInput.value);
 
-  if (!startInput.value || !endInput.value) return alert("Enter dates");
+  if (!startInput.value || !endInput.value) {
+    alert("Enter dates");
+    return;
+  }
 
   inputSection.style.display = 'none';
   counterSection.style.display = 'block';
 
-  displayStart.textContent = start.toDateString();
-  displayEnd.textContent = end.toDateString();
+  // TITLE
+  if (titleInput.value.trim()) {
+    counterTitle.textContent = titleInput.value;
+  }
 
-  displayTitle.textContent = "My Counter";
+  counterTitle.onclick = () => {
+    const newTitle = prompt("Edit title:", counterTitle.textContent);
+    if (newTitle) counterTitle.textContent = newTitle;
+  };
 
-  const quote = quoteInput.value.trim();
-  displayQuote.textContent = quote ? `“ ${quote} ”` : '';
+  // QUOTE
+  if (quoteInput.value.trim()) {
+    displayQuote.textContent = `“ ${quoteInput.value} ”`;
+  }
 
-  enableTitleEditing();
-  enableQuoteEditing();
+  displayQuote.onclick = () => {
+    const newQuote = prompt("Edit quote:", displayQuote.textContent);
+    if (newQuote) displayQuote.textContent = `“ ${newQuote} ”`;
+  };
 
+  displayStart.textContent = startDate.toDateString();
+  displayEnd.textContent = endDate.toDateString();
+
+  renderStartEndFlags();
   renderMilestones();
 
-  updateCountdown(start, end);
+  updateCountdown(startDate, endDate);
 
   clearInterval(countdownInterval);
-  countdownInterval = setInterval(() => updateCountdown(start, end), 1000);
+  countdownInterval = setInterval(() => {
+    updateCountdown(startDate, endDate);
+  }, 1000);
 });
 
-// View milestones
-if (viewMsBtn) {
-  viewMsBtn.onclick = showMilestoneList;
+// =========================
+// RESET
+// =========================
+
+if (resetBtn) {
+  resetBtn.addEventListener('click', () => {
+    clearInterval(countdownInterval);
+    location.reload();
+  });
+}
+
+// =========================
+// MODAL
+// =========================
+
+if (addMsBtn && modal) {
+  addMsBtn.onclick = () => modal.style.display = 'flex';
+
+  closeModal.onclick = () => modal.style.display = 'none';
+
+  window.onclick = e => {
+    if (e.target === modal) modal.style.display = 'none';
+  };
+
+  msSave.onclick = () => {
+    const title = msTitle.value.trim();
+    const start = new Date(msStart.value);
+    const end = new Date(msEnd.value);
+
+    if (!title || isNaN(start) || isNaN(end)) {
+      alert("Invalid milestone");
+      return;
+    }
+
+    milestones.push({
+      title,
+      start,
+      end,
+      colors: getRandomMilestonePalette()
+    });
+
+    modal.style.display = 'none';
+
+    msTitle.value = '';
+    msStart.value = '';
+    msEnd.value = '';
+
+    renderMilestones();
+  };
 }
