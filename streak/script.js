@@ -22,11 +22,6 @@ function makeId(title) {
   return `${base || "widget"}_${Date.now().toString(36)}`;
 }
 
-function getWidgetIdFromUrl() {
-  const params = new URLSearchParams(window.location.search);
-  return params.get("id");
-}
-
 function getCountKey(id) {
   return `streak_count_${id}`;
 }
@@ -41,37 +36,11 @@ function setCount(id, value) {
   localStorage.setItem(getCountKey(id), String(value));
 }
 
-function getStatusText(count) {
-  if (count === 0) return { text: "Start your streak 🚀", color: "#aaa" };
-  if (count < 5) return { text: "Getting started...", color: "#4caf50" };
-  if (count < 10) return { text: "Nice consistency 👀", color: "#00bcd4" };
-  if (count < 20) return { text: "Impressive 🔥", color: "#ff9800" };
-  if (count < 50) return { text: "You're unstoppable 💪", color: "#ff5722" };
-  return { text: "LEGEND STATUS 👑", color: "#ffd700" };
-}
-
-function updateWidgetTitle(id, newTitle) {
-  const widgets = getWidgetList();
-  const widget = widgets.find((w) => w.id === id);
-  if (!widget) return;
-
-  widget.title = newTitle;
-  saveWidgetList(widgets);
-}
-
 /* Dashboard page */
 const widgetListEl = document.getElementById("widget-list");
 const createBtn = document.getElementById("create-widget-btn");
 
 if (widgetListEl && createBtn) {
-  function copyText(text) {
-    if (navigator.clipboard && window.isSecureContext) {
-      return navigator.clipboard.writeText(text);
-    }
-
-    return Promise.resolve(prompt("Copy this link:", text));
-  }
-
   function renderDashboard() {
     const widgets = getWidgetList();
     widgetListEl.innerHTML = "";
@@ -107,20 +76,21 @@ if (widgetListEl && createBtn) {
     widgetListEl.querySelectorAll("[data-open]").forEach((btn) => {
       btn.addEventListener("click", () => {
         const id = btn.getAttribute("data-open");
-        window.location.href = `widget.html?id=${encodeURIComponent(id)}`;
+        window.location.href = `streaks_widgets/widget.html?id=${encodeURIComponent(id)}`;
       });
     });
 
     widgetListEl.querySelectorAll("[data-copy]").forEach((btn) => {
       btn.addEventListener("click", async () => {
         const id = btn.getAttribute("data-copy");
-        const link = `${window.location.origin}${window.location.pathname.replace(/index\.html$/, "")}widget.html?id=${encodeURIComponent(id)}`;
+        const link = `${window.location.origin}${window.location.pathname.replace(/index\.html$/, "")}streaks_widgets/widget.html?id=${encodeURIComponent(id)}`;
+
         try {
-          await copyText(link);
+          await navigator.clipboard.writeText(link);
           btn.textContent = "Copied";
           setTimeout(() => (btn.textContent = "Copy link"), 1200);
         } catch {
-          alert("Could not copy the link.");
+          prompt("Copy this link:", link);
         }
       });
     });
@@ -164,85 +134,12 @@ if (widgetListEl && createBtn) {
     const widgets = getWidgetList();
     const id = makeId(title);
 
-    widgets.push({
-      id,
-      title: title.trim(),
-    });
-
+    widgets.push({ id, title: title.trim() });
     saveWidgetList(widgets);
+
     renderDashboard();
-    window.location.href = `widget.html?id=${encodeURIComponent(id)}`;
+    window.location.href = `streaks_widgets/widget.html?id=${encodeURIComponent(id)}`;
   });
 
   renderDashboard();
-}
-
-/* Widget page */
-const counterEl = document.getElementById("counter");
-const statusEl = document.getElementById("status");
-const widgetTitleEl = document.getElementById("widget-title");
-
-if (counterEl && statusEl && widgetTitleEl) {
-  const widgetId = getWidgetIdFromUrl();
-
-  if (!widgetId) {
-    widgetTitleEl.textContent = "🔥 Streak";
-    statusEl.textContent = "No widget selected.";
-    counterEl.textContent = "—";
-  } else {
-    const widgets = getWidgetList();
-    const widget = widgets.find((w) => w.id === widgetId);
-
-    if (widget) {
-      widgetTitleEl.textContent = `🔥 ${widget.title}`;
-
-      widgetTitleEl.addEventListener("click", () => {
-        const widgetsNow = getWidgetList();
-        const currentWidget = widgetsNow.find((w) => w.id === widgetId);
-        if (!currentWidget) return;
-
-        const newTitle = prompt("Edit widget title:", currentWidget.title);
-        if (!newTitle || !newTitle.trim()) return;
-
-        currentWidget.title = newTitle.trim();
-        saveWidgetList(widgetsNow);
-        widgetTitleEl.textContent = `🔥 ${currentWidget.title}`;
-      });
-    } else {
-      widgetTitleEl.textContent = "🔥 Streak";
-    }
-  }
-
-  let count = widgetId ? getCount(widgetId) : 0;
-
-  function updateUI() {
-    counterEl.textContent = count;
-
-    const state = getStatusText(count);
-    statusEl.textContent = state.text;
-    counterEl.style.color = state.color;
-
-    if (widgetId) {
-      setCount(widgetId, count);
-    }
-  }
-
-  window.increase = function () {
-    count++;
-    updateUI();
-  };
-
-  window.decrease = function () {
-    if (count > 0) {
-      count--;
-      updateUI();
-    }
-  };
-
-  window.reset = function () {
-    count = 0;
-    updateUI();
-  };
-
-  updateUI();
 }
