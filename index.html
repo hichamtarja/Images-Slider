@@ -4,79 +4,68 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Widget Hub · Dashboard</title>
-  <!-- SortableJS for drag-and-drop -->
   <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
-  <!-- Confetti for celebrations (optional sound effect trigger) -->
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1"></script>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <!-- Floating emojis (now with hover + parallax) -->
+  <!-- Floating emojis -->
   <div class="floating" id="floatingEmojis" aria-hidden="true">
-    <span data-emoji="🌟">🌟</span>
-    <span data-emoji="🔥">🔥</span>
-    <span data-emoji="🎞">🎞</span>
-    <span data-emoji="✨">✨</span>
-    <span data-emoji="💫">💫</span>
-    <span data-emoji="😎">😎</span>
-    <span data-emoji="⌛">⌛</span>
-    <span data-emoji="🕺">🕺</span>
-    <span data-emoji="⚡">⚡</span>
+    <!-- Existing + new emojis -->
+    <span>🌟</span><span>🔥</span><span>🎞</span><span>✨</span><span>💫</span>
+    <span>😎</span><span>⌛</span><span>🕺</span><span>⚡</span><span>🎯</span>
+    <span>🧠</span><span>📅</span><span>⏰</span><span>🎨</span><span>🎵</span>
+    <span>📊</span><span>🔔</span><span>💡</span><span>🏆</span>
   </div>
 
-  <!-- Controls Bar -->
-  <div class="controls">
+  <!-- Top bar: greeting on left, theme toggle + menu on right -->
+  <div class="top-bar">
     <div class="greeting-clock" id="greetingClock"></div>
-    
-    <button id="themeToggle" class="control-btn" aria-label="Toggle dark/light mode">
-      <span class="theme-icon">🌙</span>
-      <span class="theme-text">Dark</span>
-    </button>
-    
+    <div class="top-actions">
+      <button id="themeToggle" class="control-btn" aria-label="Toggle dark/light mode">
+        <span class="theme-icon">🌙</span>
+        <span class="theme-text">Dark</span>
+      </button>
+      <div class="menu-dropdown">
+        <button id="menuToggleBtn" class="control-btn menu-toggle" aria-label="Menu">•••</button>
+        <div class="dropdown-content" id="dropdownMenu">
+          <button id="exportLayoutBtn" class="dropdown-item">📤 Export Layout</button>
+          <button id="importLayoutBtn" class="dropdown-item">📥 Import Layout</button>
+          <input type="file" id="importFileInput" accept=".json" style="display:none">
+          <button id="resetLayoutBtn" class="dropdown-item">🔄 Reset Layout</button>
+          <div class="dropdown-divider"></div>
+          <button id="soundToggle" class="dropdown-item">
+            <span class="sound-icon">🔇</span> Sound Effects
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Accent color picker (moved inline with filters for better layout) -->
+  <div class="filters-section">
     <div class="accent-picker">
       <label for="accentColor">Accent</label>
       <input type="color" id="accentColor" value="#38bdf8">
     </div>
-
-    <div class="layout-controls">
-      <button id="exportLayoutBtn" class="control-btn" title="Export layout">📤 Export</button>
-      <button id="importLayoutBtn" class="control-btn" title="Import layout">📥 Import</button>
-      <input type="file" id="importFileInput" accept=".json" style="display:none">
-      <button id="resetLayoutBtn" class="control-btn" title="Reset to default">🔄 Reset</button>
+    <div class="category-filter">
+      <span class="filter-label">Filter:</span>
+      <div class="filter-chips" id="filterChips"></div>
     </div>
-
-    <button id="soundToggle" class="control-btn" aria-label="Toggle sound effects">
-      <span class="sound-icon">🔇</span>
-    </button>
-  </div>
-
-  <!-- Category filter chips -->
-  <div class="category-filter">
-    <span class="filter-label">Filter:</span>
-    <div class="filter-chips" id="filterChips">
-      <!-- Dynamically populated by JS -->
+    <div class="sort-options">
+      <span>Sort:</span>
+      <button data-sort="default" class="sort-btn active">Default</button>
+      <button data-sort="most-used" class="sort-btn">Most Used</button>
+      <button data-sort="recent" class="sort-btn">Recent</button>
     </div>
   </div>
 
-  <!-- Sort options -->
-  <div class="sort-options">
-    <span>Sort by:</span>
-    <button data-sort="default" class="sort-btn active">Default</button>
-    <button data-sort="most-used" class="sort-btn">Most Used</button>
-    <button data-sort="recent" class="sort-btn">Recently Used</button>
-  </div>
-
-  <!-- Main dashboard container -->
   <main class="container">
     <h1>✨ My Widget Hub</h1>
-
-    <!-- Card grid -->
-    <div class="cards" id="cardsContainer">
-      <!-- Cards will be dynamically rendered by JS for easier maintenance -->
-    </div>
+    <div class="cards" id="cardsContainer"></div>
   </main>
 
-  <!-- Custom context menu (hidden by default) -->
+  <!-- Context Menu -->
   <div id="contextMenu" class="context-menu">
     <div class="context-item" data-action="open">Open</div>
     <div class="context-item" data-action="open-new-tab">Open in New Tab</div>
@@ -86,7 +75,7 @@
     <div class="context-item" data-action="clear-note">Clear Note</div>
   </div>
 
-  <!-- Note editor modal (hidden) -->
+  <!-- Note Modal -->
   <div id="noteModal" class="modal">
     <div class="modal-content">
       <span class="close">&times;</span>
