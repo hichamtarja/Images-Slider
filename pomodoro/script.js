@@ -14,11 +14,11 @@ let currentSessionStart = null;
 let pendingPartialAction = null;
 let pendingPartialElapsed = 0;
 
-// Extra time tracking (per session accumulation)
+// Extra time tracking
 let extraTimeSeconds = 0;
 let extraTimeInterval = null;
 let isExtraTimeRunning = false;
-let extraTimeAccumulated = 0; // accumulates across the current break/work period
+let extraTimeAccumulated = 0;
 
 let sharedAudioCtx = null;
 
@@ -49,8 +49,21 @@ let settings = {
   trackExtraTime: true
 };
 
-const quotes = [ /* ... same ... */ ];
-const workQuotes = [ /* ... same ... */ ];
+const quotes = [
+  "Rest is not idleness.",
+  "Almost everything will work again if you unplug it for a few minutes.",
+  "Your future self will thank you.",
+  "Take a deep breath. You're doing great.",
+  "Productivity is about sustainable rhythms.",
+  "Step away to come back stronger."
+];
+const workQuotes = [
+  "Let's get back to it!",
+  "Time to focus.",
+  "You've got this.",
+  "One Pomodoro at a time.",
+  "Deep work begins now."
+];
 
 let statsChart = null;
 let currentChartTab = 'daily';
@@ -265,7 +278,6 @@ function stopExtraTime() {
   extraTimeInterval = null;
   isExtraTimeRunning = false;
   if (extraTimeContainer) extraTimeContainer.style.display = 'none';
-  // Accumulate into extraTimeAccumulated
   extraTimeAccumulated += extraTimeSeconds;
   extraTimeSeconds = 0;
 }
@@ -656,7 +668,7 @@ function finalizeSessionTransition(isSkipped) {
   partialElapsedLogged = false;
   if (startPauseBtn) startPauseBtn.textContent = 'Start';
 
-  // Start extra time counter if auto-start is off
+  // Start extra time counter if auto-start is off and we finished a work session
   if (!settings.autoStart && currentSessionType !== 'work') {
     startExtraTime();
   } else if (settings.autoStart && !isSkipped) {
@@ -706,7 +718,6 @@ function playTaskCompleteSound() {
 }
 
 // ======================== TASKS ========================
-// ... (same as before with showTaskDetail) ...
 function renderTasks() {
   if (!tasksListDiv || !completedTasksDiv) return;
   if (activeTaskId) {
@@ -981,7 +992,6 @@ function init() {
       });
     }
   });
-  // Use MutationObserver to detect style changes
   const observer = new MutationObserver(() => {
     const anyOpen = modals.some(m => m && m.style.display === 'flex');
     if (anyOpen) pauseExtraTime();
@@ -1028,7 +1038,7 @@ function init() {
     saveToStorage();
     if (settingsModal) settingsModal.style.display = 'none';
     updateChart(currentChartTab);
-    // Do NOT reset extra time; it persists
+    // Extra time persists; do NOT reset
   });
 
   document.querySelectorAll('.close-modal').forEach(btn => btn.addEventListener('click', () => {
