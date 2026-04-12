@@ -1,5 +1,7 @@
 // ======================== GLOBAL STATE & DOM ELEMENTS ========================
 let timerInterval = null;
+let animationFrame = null;
+let lastTimestamp = null;
 let currentSessionType = 'work';
 let sessionCount = 1;
 let timeLeft = 25 * 60;
@@ -88,7 +90,7 @@ const setFullscreenBreak = document.getElementById('set-fullscreen-break');
 const setFullscreenWork = document.getElementById('set-fullscreen-work');
 const saveSettingsBtn = document.getElementById('save-settings-btn');
 
-// Value displays for sliders
+// Value displays
 const workValue = document.getElementById('work-value');
 const shortValue = document.getElementById('short-value');
 const longValue = document.getElementById('long-value');
@@ -112,6 +114,7 @@ const chartContainer = document.querySelector('.chart-container');
 const historyListDiv = document.getElementById('history-list');
 const exportDataBtn = document.getElementById('export-data-btn');
 const focusToggle = document.getElementById('focus-mode-toggle');
+const exitFocusBtn = document.getElementById('exit-focus-mode');
 
 // ======================== INITIALIZATION & STORAGE ========================
 function loadFromStorage() {
@@ -183,7 +186,7 @@ function updateStreak() {
   streakDaysSpan.textContent = streakDays;
 }
 
-// ======================== TIMER CORE ========================
+// ======================== TIMER CORE (requestAnimationFrame) ========================
 function updateTimerDisplay() {
   const mins = Math.floor(timeLeft / 60);
   const secs = timeLeft % 60;
@@ -210,78 +213,39 @@ function drawTimer(progress = null) {
   ctx.stroke();
 }
 
-function tick() {
-  if (timeLeft <= 0) {
-    completeSession();
-    return;
-  }
-  timeLeft--;
-  updateTimerDisplay();
-  drawTimer(timeLeft / totalSessionTime);
-  document.title = `${minutesSpan.textContent}:${secondsSpan.textContent} - ${currentSessionType}`;
-}
-
-function completeSession() {
-  clearInterval(timerInterval);
-  timerInterval = null;
-  isRunning = false;
-  startPauseBtn.textContent = 'Start';
-  playSound(settings.sound);
-  if (settings.desktopNotify && Notification.permission === 'granted') {
-    new Notification(`Pomodoro Suite`, { body: `${currentSessionType} session completed!` });
-  }
-  if (settings.voiceEnabled) {
-    const msg = new SpeechSynthesisUtterance(currentSessionType === 'work' ? 'Time for a break.' : 'Back to work.');
-    window.speechSynthesis.speak(msg);
-  }
-  const session = { type: currentSessionType, duration: totalSessionTime / 60, timestamp: new Date().toISOString(), interruptions: [] };
-  sessionsHistory.push(session);
-  if (currentSessionType === 'work') {
-    todayPomodoros++;
-    updateStreak();
-    if (activeTaskId) {
-      const task = tasks.find(t => t.id === activeTaskId);
-      if (task && !task.completed) {
-        task.completedPomodoros = Math.min(task.completedPomodoros + 1, task.estimatedPomodoros);
-        if (task.completedPomodoros >= task.estimatedPomodoros) task.completed = true;
-      }
+function timerLoop(timestamp) {
+  if (!isRunning) return;
+  if (!lastTimestamp) lastTimestamp = timestamp;
+  const delta = timestamp - lastTimestamp;
+  if (delta >= 1000) {
+    const secondsPassed = Math.floor(delta / 1000);
+    timeLeft = Math.max(0, timeLeft - secondsPassed);
+    lastTimestamp = timestamp - (delta % 1000);
+    updateTimerDisplay();
+    drawTimer(timeLeft / totalSessionTime);
+    if (timeLeft <= 0) {
+      completeSession();
+      return;
     }
   }
-  if (settings.fullscreenBreak && currentSessionType === 'work') breakOverlay.style.display = 'flex';
-  if (settings.fullscreenWork && currentSessionType !== 'work') workOverlay.style.display = 'flex';
-  quoteText.textContent = currentSessionType === 'work' ? `“${quotes[Math.floor(Math.random() * quotes.length)]}”` : `“${workQuotes[Math.floor(Math.random() * workQuotes.length)]}”`;
-  if (currentSessionType === 'work') {
-    sessionCount++;
-    if (sessionCount > settings.longBreakInterval) { currentSessionType = 'longBreak'; sessionCount = 1; }
-    else currentSessionType = 'shortBreak';
-  } else {
-    currentSessionType = 'work';
-  }
-  timeLeft = (currentSessionType === 'work' ? settings.workDuration : currentSessionType === 'shortBreak' ? settings.shortBreak : settings.longBreak) * 60;
-  totalSessionTime = timeLeft;
-  updateSessionLabel();
-  updateTimerDisplay();
-  drawTimer(1);
-  updateQuickStats();
-  renderTasks();
-  saveToStorage();
-  updateChart(currentChartTab);
-  renderHistoryList();
-  if (settings.autoStart) startTimer();
+  animationFrame = requestAnimationFrame(timerLoop);
 }
 
 function startTimer() {
   if (isRunning) return;
   isRunning = true;
   startPauseBtn.textContent = 'Pause';
-  timerInterval = setInterval(tick, 1000);
+  lastTimestamp = null;
+  animationFrame = requestAnimationFrame(timerLoop);
   if (settings.desktopNotify && Notification.permission === 'default') Notification.requestPermission();
 }
 
 function pauseTimer() {
-  clearInterval(timerInterval);
-  timerInterval = null;
   isRunning = false;
+  if (animationFrame) {
+    cancelAnimationFrame(animationFrame);
+    animationFrame = null;
+  }
   startPauseBtn.textContent = 'Start';
 }
 
@@ -296,6 +260,62 @@ function resetTimer() {
 function skipSession() {
   pauseTimer();
   completeSession();
+}
+
+function completeSession() {
+  pauseTimer();
+  playSound(settings.sound);
+  if (settings.desktopNotify && Notification.permission === 'granted') {
+    new Notification(`Pomodoro Suite`, { body: `${currentSessionType} session completed!` });
+  }
+  if (settings.voiceEnabled) {
+    const msg = new SpeechSynthesisUtterance(currentSessionType === 'work' ? 'Time for a break.' : 'Back to work.');
+    window.speechSynthesis.speak(msg);
+  }
+  
+  // Store session with task name if applicable
+  const activeTask = activeTaskId ? tasks.find(t => t.id === activeTaskId) : null;
+  const session = {
+    type: currentSessionType,
+    duration: totalSessionTime / 60,
+    timestamp: new Date().toISOString(),
+    taskName: (currentSessionType === 'work' && activeTask) ? activeTask.title : null,
+    interruptions: []
+  };
+  sessionsHistory.push(session);
+  
+  if (currentSessionType === 'work') {
+    todayPomodoros++;
+    updateStreak();
+    if (activeTask && !activeTask.completed) {
+      activeTask.completedPomodoros = Math.min(activeTask.completedPomodoros + 1, activeTask.estimatedPomodoros);
+      if (activeTask.completedPomodoros >= activeTask.estimatedPomodoros) activeTask.completed = true;
+    }
+  }
+  
+  if (settings.fullscreenBreak && currentSessionType === 'work') breakOverlay.style.display = 'flex';
+  if (settings.fullscreenWork && currentSessionType !== 'work') workOverlay.style.display = 'flex';
+  quoteText.textContent = currentSessionType === 'work' ? `“${quotes[Math.floor(Math.random() * quotes.length)]}”` : `“${workQuotes[Math.floor(Math.random() * workQuotes.length)]}”`;
+  
+  if (currentSessionType === 'work') {
+    sessionCount++;
+    if (sessionCount > settings.longBreakInterval) { currentSessionType = 'longBreak'; sessionCount = 1; }
+    else currentSessionType = 'shortBreak';
+  } else {
+    currentSessionType = 'work';
+  }
+  
+  timeLeft = (currentSessionType === 'work' ? settings.workDuration : currentSessionType === 'shortBreak' ? settings.shortBreak : settings.longBreak) * 60;
+  totalSessionTime = timeLeft;
+  updateSessionLabel();
+  updateTimerDisplay();
+  drawTimer(1);
+  updateQuickStats();
+  renderTasks();
+  saveToStorage();
+  updateChart(currentChartTab);
+  renderHistoryList();
+  if (settings.autoStart) startTimer();
 }
 
 function updateSessionLabel() {
@@ -367,12 +387,11 @@ function openTaskModal(task = null) {
     editEstimateValue.textContent = task.estimatedPomodoros;
     editTaskNotes.value = task.notes || '';
     document.getElementById('task-modal-title').textContent = 'Edit Task';
-    deleteTaskBtn.style.display = 'block';
   } else {
     editTaskId.value = ''; editTaskTitle.value = ''; editTaskEstimate.value = 1; editEstimateValue.textContent = 1; editTaskNotes.value = '';
     document.getElementById('task-modal-title').textContent = 'New Task';
-    deleteTaskBtn.style.display = 'none';
   }
+  deleteTaskBtn.style.display = 'block';
   taskModal.style.display = 'flex';
 }
 
@@ -446,7 +465,10 @@ function updateChart(tab) {
 }
 
 function renderHistoryList() {
-  historyListDiv.innerHTML = sessionsHistory.slice(-20).reverse().map(s => `<div class="history-item"><span>${s.type} · ${s.duration} min</span><span>${new Date(s.timestamp).toLocaleString()}</span></div>`).join('');
+  historyListDiv.innerHTML = sessionsHistory.slice(-20).reverse().map(s => {
+    const displayType = s.taskName ? s.taskName : s.type;
+    return `<div class="history-item"><span>${displayType} · ${s.duration} min</span><span>${new Date(s.timestamp).toLocaleString()}</span></div>`;
+  }).join('');
 }
 
 function updateQuickStats() {
@@ -472,14 +494,12 @@ function init() {
   
   document.getElementById('settings-toggle').addEventListener('click', () => settingsModal.style.display = 'flex');
   
-  // Slider value updates
   setWork.addEventListener('input', () => workValue.textContent = setWork.value);
   setShort.addEventListener('input', () => shortValue.textContent = setShort.value);
   setLong.addEventListener('input', () => longValue.textContent = setLong.value);
   setInterval.addEventListener('input', () => intervalValue.textContent = setInterval.value);
   editTaskEstimate.addEventListener('input', () => editEstimateValue.textContent = editTaskEstimate.value);
   
-  // Color bar click triggers color input
   colorBar.addEventListener('click', () => setAccent.click());
   setAccent.addEventListener('input', e => {
     colorBar.style.backgroundColor = e.target.value;
@@ -538,13 +558,20 @@ function init() {
   }));
   
   exportDataBtn.addEventListener('click', () => {
-    let csv = "Type,Duration,Timestamp\n";
-    sessionsHistory.forEach(s => csv += `${s.type},${s.duration},${s.timestamp}\n`);
+    let csv = "Type,Duration,Timestamp,Task\n";
+    sessionsHistory.forEach(s => csv += `${s.type},${s.duration},${s.timestamp},${s.taskName || ''}\n`);
     const blob = new Blob([csv], { type: 'text/csv' }), url = URL.createObjectURL(blob);
     const a = document.createElement('a'); a.href = url; a.download = 'pomodoro_sessions.csv'; a.click();
   });
   
-  focusToggle.addEventListener('click', () => document.body.classList.toggle('focus-mode'));
+  focusToggle.addEventListener('click', () => {
+    document.body.classList.add('focus-mode');
+    exitFocusBtn.style.display = 'flex';
+  });
+  exitFocusBtn.addEventListener('click', () => {
+    document.body.classList.remove('focus-mode');
+    exitFocusBtn.style.display = 'none';
+  });
   
   toggleCompletedBtn.addEventListener('click', () => {
     showCompleted = !showCompleted;
