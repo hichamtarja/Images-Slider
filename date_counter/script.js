@@ -4,7 +4,7 @@ const STORAGE_KEY = "date_widget_list";
 // BASE PATH (IMPORTANT FIX)
 // =========================
 
-const BASE_PATH = "Widgets/date_counter/date_counter_widgets/";
+const BASE_PATH = "https://hichamtarja.github.io/Widgets/date_counter/date_counter_widgets/";
 
 // =========================
 // STORAGE HELPERS
