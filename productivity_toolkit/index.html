@@ -186,12 +186,15 @@
       <section class="panel panel-half">
         <div class="panel-header">
           <h2>🔒 Encryption</h2>
+          <button id="clearEncryptionBtn" class="icon-btn" title="Clear all fields">🗑️</button>
         </div>
         <div class="encryption-tool">
           <div class="tab-buttons">
-            <button id="encryptTabBtn" class="tab-btn active">Encrypt</button>
-            <button id="decryptTabBtn" class="tab-btn">Decrypt</button>
+            <button id="encryptTabBtn" class="tab-btn active">Encrypt Text</button>
+            <button id="decryptTabBtn" class="tab-btn">Decrypt Text</button>
           </div>
+      
+          <!-- Text Encryption Panel -->
           <div id="encryptPanel" class="encrypt-panel">
             <div class="form-group">
               <label for="plaintextInput">Text to Encrypt</label>
@@ -201,13 +204,15 @@
               <label for="encryptPassword">Password</label>
               <input type="password" id="encryptPassword" placeholder="Enter password">
             </div>
-            <button id="encryptBtn" class="btn btn-primary btn-full">Encrypt</button>
+            <button id="encryptBtn" class="btn btn-primary btn-full">Encrypt Text</button>
             <div class="form-group">
               <label for="ciphertextOutput">Encrypted (Base64)</label>
               <textarea id="ciphertextOutput" rows="3" readonly placeholder="Result will appear here"></textarea>
               <button id="copyCiphertextBtn" class="btn btn-outline btn-small" style="margin-top:8px;">📋 Copy</button>
             </div>
           </div>
+      
+          <!-- Text Decryption Panel -->
           <div id="decryptPanel" class="encrypt-panel hidden">
             <div class="form-group">
               <label for="ciphertextInput">Encrypted Text (Base64)</label>
@@ -217,12 +222,32 @@
               <label for="decryptPassword">Password</label>
               <input type="password" id="decryptPassword" placeholder="Enter password">
             </div>
-            <button id="decryptBtn" class="btn btn-primary btn-full">Decrypt</button>
+            <button id="decryptBtn" class="btn btn-primary btn-full">Decrypt Text</button>
             <div class="form-group">
               <label for="decryptedOutput">Decrypted Text</label>
               <textarea id="decryptedOutput" rows="3" readonly placeholder="Result will appear here"></textarea>
               <button id="copyDecryptedBtn" class="btn btn-outline btn-small" style="margin-top:8px;">📋 Copy</button>
             </div>
+          </div>
+      
+          <!-- File Encryption Section -->
+          <div class="file-encryption">
+            <h3 style="margin: 1.5rem 0 1rem; font-size: 1.2rem;">📁 File Encryption</h3>
+            <div class="form-group">
+              <label for="fileInput">Select File</label>
+              <input type="file" id="fileInput">
+            </div>
+            <div class="form-group">
+              <label for="filePassword">Password</label>
+              <input type="password" id="filePassword" placeholder="Enter password">
+            </div>
+            <div style="display: flex; gap: 12px;">
+              <button id="encryptFileBtn" class="btn btn-primary">🔒 Encrypt File</button>
+              <button id="decryptFileBtn" class="btn btn-outline">🔓 Decrypt File</button>
+            </div>
+            <p style="font-size:0.85rem; color: var(--text-secondary); margin-top: 12px;">
+              Encrypted files are saved with <code>.enc</code> extension. Use the same password to decrypt.
+            </p>
           </div>
         </div>
       </section>
