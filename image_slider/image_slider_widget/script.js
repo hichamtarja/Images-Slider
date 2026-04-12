@@ -1,149 +1,83 @@
-/**
- * Polished Image Slider
- * - Dot indicators with click navigation
- * - Slide counter
- * - Pause auto-slide on hover
- * - Keyboard arrow support
- * - Smooth transitions
- */
+const WIDGET_LIST_KEY = "image_slider_list";
 
-document.addEventListener('DOMContentLoaded', () => {
-  const slides = document.querySelectorAll('.slide');
-  const prevBtn = document.querySelector('.prev');
-  const nextBtn = document.querySelector('.next');
-  const currentSpan = document.getElementById('current-slide');
-  const totalSpan = document.getElementById('total-slides');
-  const dotsContainer = document.getElementById('dots-container');
-  const slider = document.getElementById('slider');
+const slidesContainer = document.getElementById('slides-container');
+const prevBtn = document.querySelector('.prev');
+const nextBtn = document.querySelector('.next');
+const currentSpan = document.getElementById('current-slide');
+const totalSpan = document.getElementById('total-slides');
+const dotsContainer = document.getElementById('dots-container');
+const slider = document.getElementById('slider');
+const errorMsg = document.getElementById('error-message');
 
-  let currentIndex = 0;
-  const totalSlides = slides.length;
-  let autoSlideInterval = null;
-  const AUTO_SLIDE_DELAY = 4000;
+let currentIndex = 0, totalSlides = 0, slides = [], autoInterval = null;
+const AUTO_DELAY = 4000;
 
-  // Update total slides display
+function getWidgetId() { return new URLSearchParams(window.location.search).get('id'); }
+function getWidgetList() { try { return JSON.parse(localStorage.getItem(WIDGET_LIST_KEY)) || []; } catch { return []; } }
+
+const widgetId = getWidgetId();
+const widget = getWidgetList().find(w => w.id === widgetId);
+
+if (!widget || !widget.images?.length) {
+  slider.style.display = 'none';
+  errorMsg.classList.remove('hidden');
+} else {
+  document.title = `${widget.title} · Image Slider`;
+  widget.images.forEach((url, i) => {
+    const img = document.createElement('img');
+    img.src = url;
+    img.alt = `Slide ${i+1}`;
+    img.className = 'slide' + (i === 0 ? ' active' : '');
+    slidesContainer.appendChild(img);
+  });
+  slides = document.querySelectorAll('.slide');
+  totalSlides = slides.length;
   totalSpan.textContent = totalSlides;
 
-  // Create dot indicators
   function createDots() {
     dotsContainer.innerHTML = '';
-    for (let i = 0; i < totalSlides; i++) {
+    for (let i=0; i<totalSlides; i++) {
       const dot = document.createElement('button');
-      dot.classList.add('dot');
-      dot.setAttribute('aria-label', `Go to slide ${i + 1}`);
+      dot.className = 'dot';
       dot.addEventListener('click', () => goToSlide(i));
       dotsContainer.appendChild(dot);
     }
     updateDots();
   }
-
-  // Update active dot
   function updateDots() {
-    const dots = document.querySelectorAll('.dot');
-    dots.forEach((dot, idx) => {
-      dot.classList.toggle('active', idx === currentIndex);
-    });
+    document.querySelectorAll('.dot').forEach((dot,i) => dot.classList.toggle('active', i===currentIndex));
   }
-
-  // Show slide by index
-  function goToSlide(index) {
-    // Remove active class from all slides
-    slides.forEach(slide => slide.classList.remove('active'));
-    // Add active class to current slide
-    slides[index].classList.add('active');
-    currentIndex = index;
-    
-    // Update counter
-    currentSpan.textContent = currentIndex + 1;
-    
-    // Update dots
+  function goToSlide(i) {
+    slides.forEach(s => s.classList.remove('active'));
+    slides[i].classList.add('active');
+    currentIndex = i;
+    currentSpan.textContent = i+1;
     updateDots();
   }
+  function nextSlide() { goToSlide((currentIndex+1)%totalSlides); }
+  function prevSlide() { goToSlide((currentIndex-1+totalSlides)%totalSlides); }
+  function startAuto() { stopAuto(); autoInterval = setInterval(nextSlide, AUTO_DELAY); }
+  function stopAuto() { if (autoInterval) clearInterval(autoInterval); }
 
-  // Next slide
-  function nextSlide() {
-    const newIndex = (currentIndex + 1) % totalSlides;
-    goToSlide(newIndex);
-  }
-
-  // Previous slide
-  function prevSlide() {
-    const newIndex = (currentIndex - 1 + totalSlides) % totalSlides;
-    goToSlide(newIndex);
-  }
-
-  // Auto slide control
-  function startAutoSlide() {
-    if (autoSlideInterval) clearInterval(autoSlideInterval);
-    autoSlideInterval = setInterval(nextSlide, AUTO_SLIDE_DELAY);
-  }
-
-  function stopAutoSlide() {
-    if (autoSlideInterval) {
-      clearInterval(autoSlideInterval);
-      autoSlideInterval = null;
-    }
-  }
-
-  // Event listeners
-  nextBtn.addEventListener('click', () => {
-    nextSlide();
-    stopAutoSlide();
-    startAutoSlide(); // restart timer after manual interaction
+  nextBtn.addEventListener('click', () => { nextSlide(); stopAuto(); startAuto(); });
+  prevBtn.addEventListener('click', () => { prevSlide(); stopAuto(); startAuto(); });
+  slider.addEventListener('mouseenter', stopAuto);
+  slider.addEventListener('mouseleave', startAuto);
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowLeft') { prevSlide(); stopAuto(); startAuto(); }
+    if (e.key === 'ArrowRight') { nextSlide(); stopAuto(); startAuto(); }
   });
 
-  prevBtn.addEventListener('click', () => {
-    prevSlide();
-    stopAutoSlide();
-    startAutoSlide();
-  });
+  let touchStart = 0;
+  slider.addEventListener('touchstart', e => { touchStart = e.changedTouches[0].screenX; stopAuto(); }, {passive:true});
+  slider.addEventListener('touchend', e => {
+    const diff = e.changedTouches[0].screenX - touchStart;
+    if (Math.abs(diff) > 50) diff < 0 ? nextSlide() : prevSlide();
+    startAuto();
+  }, {passive:true});
 
-  // Pause auto-slide on hover
-  slider.addEventListener('mouseenter', stopAutoSlide);
-  slider.addEventListener('mouseleave', startAutoSlide);
-
-  // Keyboard navigation
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'ArrowLeft') {
-      prevSlide();
-      stopAutoSlide();
-      startAutoSlide();
-    } else if (e.key === 'ArrowRight') {
-      nextSlide();
-      stopAutoSlide();
-      startAutoSlide();
-    }
-  });
-
-  // Touch swipe support (basic)
-  let touchStartX = 0;
-  let touchEndX = 0;
-
-  slider.addEventListener('touchstart', (e) => {
-    touchStartX = e.changedTouches[0].screenX;
-    stopAutoSlide();
-  }, { passive: true });
-
-  slider.addEventListener('touchend', (e) => {
-    touchEndX = e.changedTouches[0].screenX;
-    handleSwipe();
-    startAutoSlide();
-  }, { passive: true });
-
-  function handleSwipe() {
-    const swipeThreshold = 50;
-    if (touchEndX < touchStartX - swipeThreshold) {
-      nextSlide();
-    } else if (touchEndX > touchStartX + swipeThreshold) {
-      prevSlide();
-    }
-  }
-
-  // Initialize
   createDots();
-  goToSlide(0); // Ensure first slide is active
-  startAutoSlide();
-
-  // Cleanup interval on page unload (optional)
-  window.addEventListener('beforeunload', () => stopAutoSlide());
-});
+  goToSlide(0);
+  startAuto();
+  window.addEventListener('beforeunload', stopAuto);
+}
