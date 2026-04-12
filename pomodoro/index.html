@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+  <title>🍅 Pomodoro Suite · Focus & Tasks</title>
+  <!-- Chart.js for statistics -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app-wrapper">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="logo">
+        <span class="logo-icon">🍅</span>
+        <h1>Pomodoro Flow</h1>
+      </div>
+      <div class="header-actions">
+        <button id="focus-mode-toggle" class="icon-btn" title="Focus Mode">🧘</button>
+        <button id="settings-toggle" class="icon-btn" title="Settings">⚙️</button>
+      </div>
+    </header>
+
+    <!-- Main Grid -->
+    <div class="main-grid">
+      <!-- Left Column: Timer + Progress -->
+      <section class="timer-section">
+        <div class="timer-card glass">
+          <div class="session-indicator">
+            <span id="session-type-label">Work</span>
+            <span id="session-counter">1 / 4</span>
+          </div>
+
+          <!-- Circular Progress Timer -->
+          <div class="circular-timer">
+            <canvas id="timer-canvas" width="300" height="300"></canvas>
+            <div class="timer-display">
+              <span id="timer-minutes">25</span>
+              <span>:</span>
+              <span id="timer-seconds">00</span>
+            </div>
+          </div>
+
+          <!-- Controls -->
+          <div class="timer-controls">
+            <button id="timer-start-pause" class="primary-btn">Start</button>
+            <button id="timer-reset" class="secondary-btn">Reset</button>
+            <button id="timer-skip" class="secondary-btn">Skip</button>
+          </div>
+
+          <!-- Auto-start toggle (inline) -->
+          <div class="auto-start-row">
+            <label>
+              <input type="checkbox" id="auto-start-checkbox"> Auto‑start next
+            </label>
+          </div>
+
+          <!-- Stats at a glance -->
+          <div class="quick-stats">
+            <div class="stat-item">
+              <span class="stat-value" id="today-pomodoros">0</span>
+              <span class="stat-label">Today</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-value" id="streak-days">0</span>
+              <span class="stat-label">Day streak</span>
+            </div>
+            <div class="stat-item">
+              <button id="log-interruption-btn" class="interrupt-btn" title="Log distraction">⚠️ Interruption</button>
+            </div>
+          </div>
+
+          <!-- Quote / Tip (displayed during breaks) -->
+          <div id="quote-container" class="quote-box">
+            <p id="quote-text">Stay focused, you're doing great.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Right Column: Tasks -->
+      <section class="tasks-section">
+        <div class="tasks-card glass">
+          <div class="section-header">
+            <h2>📋 Tasks</h2>
+            <button id="add-task-btn" class="icon-btn">+ New</button>
+          </div>
+          <div id="tasks-list" class="tasks-list">
+            <!-- Dynamically populated -->
+          </div>
+          <div class="task-footer">
+            <span id="tasks-completed-count">0/0 completed</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Bottom Section: Statistics & History -->
+      <section class="stats-section glass">
+        <div class="stats-tabs">
+          <button class="tab-btn active" data-tab="daily">Daily</button>
+          <button class="tab-btn" data-tab="weekly">Weekly</button>
+          <button class="tab-btn" data-tab="monthly">Monthly</button>
+          <button class="tab-btn" data-tab="history">History</button>
+        </div>
+
+        <!-- Chart container -->
+        <div class="chart-container">
+          <canvas id="stats-chart"></canvas>
+        </div>
+
+        <!-- History log (hidden when chart tabs active) -->
+        <div id="history-log-panel" class="history-log" style="display: none;">
+          <div class="history-header">
+            <h3>Session Log</h3>
+            <button id="export-data-btn" class="small-btn">Export CSV</button>
+          </div>
+          <div id="history-list" class="history-list">
+            <!-- Dynamically populated -->
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settings-modal" class="modal">
+      <div class="modal-content glass">
+        <div class="modal-header">
+          <h2>Settings</h2>
+          <button class="close-modal">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div class="setting-group">
+            <label>Work duration (minutes)</label>
+            <input type="number" id="set-work" min="1" max="99" value="25">
+          </div>
+          <div class="setting-group">
+            <label>Short break (minutes)</label>
+            <input type="number" id="set-short" min="1" max="30" value="5">
+          </div>
+          <div class="setting-group">
+            <label>Long break (minutes)</label>
+            <input type="number" id="set-long" min="1" max="60" value="15">
+          </div>
+          <div class="setting-group">
+            <label>Long break interval (Pomodoros)</label>
+            <input type="number" id="set-interval" min="1" max="10" value="4">
+          </div>
+          <div class="setting-group">
+            <label>Accent color</label>
+            <input type="color" id="set-accent" value="#ff6a00">
+          </div>
+          <div class="setting-group">
+            <label>Notification sound</label>
+            <select id="set-sound">
+              <option value="bell">Bell</option>
+              <option value="chime">Chime</option>
+              <option value="digital">Digital</option>
+              <option value="gentle">Gentle</option>
+            </select>
+          </div>
+          <div class="setting-group checkbox">
+            <label>
+              <input type="checkbox" id="set-voice"> Voice announcements
+            </label>
+          </div>
+          <div class="setting-group checkbox">
+            <label>
+              <input type="checkbox" id="set-desktop-notify"> Desktop notifications
+            </label>
+          </div>
+          <div class="setting-group checkbox">
+            <label>
+              <input type="checkbox" id="set-fullscreen-break"> Full‑screen break reminder
+            </label>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button id="save-settings-btn" class="primary-btn">Save</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Task Edit Modal (for notes / edit) -->
+    <div id="task-modal" class="modal">
+      <div class="modal-content glass">
+        <div class="modal-header">
+          <h2 id="task-modal-title">Edit Task</h2>
+          <button class="close-modal">&times;</button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" id="edit-task-id">
+          <div class="setting-group">
+            <label>Title</label>
+            <input type="text" id="edit-task-title" placeholder="Task name">
+          </div>
+          <div class="setting-group">
+            <label>Estimated Pomodoros</label>
+            <input type="number" id="edit-task-estimate" min="1" value="1">
+          </div>
+          <div class="setting-group">
+            <label>Notes</label>
+            <textarea id="edit-task-notes" rows="3" placeholder="Optional notes..."></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button id="save-task-btn" class="primary-btn">Save</button>
+          <button id="delete-task-btn" class="danger-btn">Delete</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Interruption Reason Modal -->
+    <div id="interrupt-modal" class="modal">
+      <div class="modal-content glass">
+        <div class="modal-header">
+          <h2>Log Interruption</h2>
+          <button class="close-modal">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div class="setting-group">
+            <label>What distracted you?</label>
+            <input type="text" id="interrupt-reason" placeholder="e.g., Phone call, Social media...">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button id="save-interrupt-btn" class="primary-btn">Log</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Full‑screen break overlay -->
+    <div id="break-overlay" class="fullscreen-overlay" style="display: none;">
+      <div class="overlay-content">
+        <h2>☕ Time for a break!</h2>
+        <p>Step away, stretch, and rest your eyes.</p>
+        <button id="close-break-overlay" class="primary-btn">I'm back</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
