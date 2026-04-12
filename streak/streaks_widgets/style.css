@@ -1,12 +1,15 @@
 /* =============================================
-   STREAK WIDGET – CLEAN & CUSTOMIZABLE
+   STREAK WIDGET – FLIP & CUSTOMIZABLE
    ============================================= */
 :root {
   --bg-widget: #1f1f1f;
+  --bg-gradient-start: #1f1f1f;
+  --bg-gradient-end: #1f1f1f;
   --text-primary: #ffffff;
   --text-secondary: #a0a0a0;
   --accent-color: #ff6a00;
   --counter-color: #ffffff;
+  --font-family: 'Inter', system-ui, -apple-system, sans-serif;
 }
 
 * {
@@ -17,8 +20,8 @@
 
 body {
   margin: 0;
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
-  background: #191919; /* matches Notion dark mode */
+  font-family: var(--font-family);
+  background: #191919;
   color: var(--text-primary);
   min-height: 100vh;
 }
@@ -28,6 +31,7 @@ body.widget-page {
   justify-content: center;
   align-items: center;
   position: relative;
+  perspective: 1500px;
 }
 
 /* Back button */
@@ -48,20 +52,53 @@ body.widget-page {
   transition: all 0.2s;
   z-index: 10;
 }
-
 .back-btn:hover {
   background: rgba(255,255,255,0.15);
   color: white;
 }
 
-/* Widget container – no outer shadow, blends with background */
+/* Flip Container */
+.flip-container {
+  width: min(380px, calc(100vw - 32px));
+  height: auto;
+}
+.flipper {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transition: transform 0.6s;
+  transform-style: preserve-3d;
+}
+.flip-container.flipped .flipper {
+  transform: rotateY(180deg);
+}
+.front, .back {
+  width: 100%;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+.front {
+  position: relative;
+  z-index: 2;
+}
+.back {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform: rotateY(180deg);
+}
+
+/* Widget Container – No outer shadow */
 .widget-container {
   background: var(--bg-widget);
+  background: linear-gradient(135deg, var(--bg-gradient-start), var(--bg-gradient-end));
   border-radius: 32px;
-  padding: 2rem 1.8rem;
-  width: min(380px, calc(100vw - 32px));
-  transition: transform 0.2s, width 0.2s;
-  /* No box-shadow to keep Notion clean */
+  padding: 1.8rem 1.5rem;
+  width: 100%;
+  transition: transform 0.2s, background 0.3s;
+  color: var(--text-primary);
+  font-family: var(--font-family);
+  /* No box-shadow */
 }
 
 /* Header */
@@ -69,41 +106,92 @@ body.widget-page {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 1.5rem;
+  margin-bottom: 0.5rem;
 }
-
+.title-section {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.widget-emoji {
+  font-size: 2rem;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+.widget-emoji:hover {
+  transform: scale(1.1);
+}
 .editable-title {
   font-size: 1.8rem;
   font-weight: 600;
   cursor: pointer;
-  transition: opacity 0.2s;
   margin: 0;
-  color: var(--text-primary);
 }
-
 .editable-title:hover {
   opacity: 0.7;
 }
 
-.icon-btn {
+/* Three-dot menu */
+.menu-wrapper {
+  position: relative;
+}
+.menu-btn {
   background: transparent;
   border: none;
   color: var(--text-secondary);
-  font-size: 1.5rem;
+  font-size: 1.8rem;
   cursor: pointer;
-  padding: 6px;
-  border-radius: 12px;
-  transition: all 0.2s;
-  width: 40px;
-  height: 40px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  padding: 0 5px;
+}
+.menu-dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  background: #2a2a2a;
+  border-radius: 16px;
+  padding: 8px 0;
+  min-width: 130px;
+  z-index: 20;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+.menu-item {
+  display: block;
+  width: 100%;
+  padding: 10px 16px;
+  background: transparent;
+  border: none;
+  color: var(--text-primary);
+  text-align: left;
+  cursor: pointer;
+  font-size: 0.95rem;
+}
+.menu-item:hover {
+  background: rgba(255,255,255,0.1);
+}
+.reset-item {
+  color: #ef4444;
 }
 
-.icon-btn:hover {
-  background: rgba(255,255,255,0.1);
-  color: var(--text-primary);
+/* Flip hint */
+.flip-hint {
+  position: absolute;
+  bottom: 15px;
+  right: 15px;
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 1.2rem;
+  cursor: pointer;
+  opacity: 0.6;
+  transition: opacity 0.2s;
+}
+.flip-hint:hover {
+  opacity: 1;
+}
+.back-flip {
+  top: 15px;
+  right: 15px;
+  bottom: auto;
 }
 
 /* Counter */
@@ -111,22 +199,19 @@ body.widget-page {
   text-align: center;
   margin: 0.5rem 0 0.25rem;
 }
-
 #counter {
   font-size: 6rem;
   font-weight: 800;
   line-height: 1.2;
   color: var(--counter-color);
-  transition: color 0.3s, transform 0.2s;
+  transition: color 0.3s;
   letter-spacing: -0.02em;
 }
-
 #streak-label {
   font-size: 1rem;
   color: var(--text-secondary);
   text-transform: uppercase;
   letter-spacing: 2px;
-  margin-top: -5px;
 }
 
 /* Progress bar */
@@ -137,16 +222,13 @@ body.widget-page {
   height: 8px;
   position: relative;
 }
-
 .progress-bar {
   height: 100%;
   background: var(--accent-color);
   border-radius: 20px;
   width: 0%;
   transition: width 0.5s ease;
-  box-shadow: 0 0 8px var(--accent-color);
 }
-
 .progress-text {
   display: block;
   text-align: right;
@@ -155,116 +237,142 @@ body.widget-page {
   margin-top: 4px;
 }
 
-/* Status message */
+/* Status */
 #status {
   text-align: center;
   font-size: 1rem;
   margin: 1rem 0 1.5rem;
   min-height: 2.5rem;
   font-weight: 500;
-  transition: color 0.3s;
 }
 
-/* Buttons */
+/* Buttons (icon only, no box) */
 .buttons {
   display: flex;
-  gap: 10px;
+  gap: 20px;
   justify-content: center;
+  margin-top: 0.5rem;
 }
-
 .streak-btn {
-  background: rgba(255,255,255,0.08);
-  border: 1px solid rgba(255,255,255,0.05);
-  border-radius: 40px;
-  padding: 0.8rem 1.5rem;
-  color: var(--text-primary);
-  font-size: 1.1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-  flex: 1;
-  backdrop-filter: blur(4px);
-}
-
-.streak-btn:hover {
-  background: var(--accent-color);
-  border-color: var(--accent-color);
-  color: white;
-  transform: translateY(-2px);
-}
-
-.reset-btn {
   background: transparent;
-  border-color: rgba(255,255,255,0.15);
+  border: none;
+  color: var(--text-primary);
+  font-size: 2.5rem;
+  font-weight: 300;
+  cursor: pointer;
+  width: 60px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.2s;
+}
+.streak-btn:hover {
+  background: rgba(255,255,255,0.1);
+  color: var(--accent-color);
+  transform: scale(1.1);
+}
+#decrease-btn:hover {
+  color: #ef4444;
 }
 
-.reset-btn:hover {
-  background: rgba(239, 68, 68, 0.8);
-  border-color: #ef4444;
+/* Shake animation for decrease */
+.shake {
+  animation: shake 0.3s ease-in-out;
+}
+@keyframes shake {
+  0%,100% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  75% { transform: translateX(5px); }
 }
 
-/* Settings panel */
-.settings-panel {
-  margin-top: 1.8rem;
-  padding-top: 1.5rem;
-  border-top: 1px solid rgba(255,255,255,0.1);
+/* Back side content */
+.back-container {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 100%;
 }
-
-.settings-panel h3 {
-  font-size: 1.1rem;
-  margin-bottom: 1.2rem;
+.back-container h3 {
+  font-size: 1.5rem;
+  margin-bottom: 1rem;
+}
+#last-streak-info {
+  background: rgba(0,0,0,0.2);
+  border-radius: 20px;
+  padding: 1.5rem;
+  margin: 1rem 0;
+}
+#last-streak-date {
+  font-size: 1.8rem;
+  font-weight: 600;
+}
+#last-streak-time {
   color: var(--text-secondary);
-  font-weight: 500;
 }
 
+/* Settings Panel */
+.settings-panel {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: #2a2a2a;
+  border-radius: 24px;
+  padding: 1.8rem;
+  width: 320px;
+  max-height: 80vh;
+  overflow-y: auto;
+  z-index: 100;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+}
+.settings-panel h3 {
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
 .setting-item {
   margin-bottom: 1.2rem;
   display: flex;
-  align-items: center;
-  justify-content: space-between;
   flex-wrap: wrap;
-  gap: 10px;
+  align-items: center;
+  gap: 8px;
 }
-
 .setting-item label {
-  color: var(--text-primary);
-  font-size: 0.95rem;
+  min-width: 100px;
+  color: var(--text-secondary);
 }
-
-.setting-item input[type="color"] {
-  width: 60px;
-  height: 36px;
-  border: 1px solid rgba(255,255,255,0.2);
-  border-radius: 12px;
-  background: transparent;
-  cursor: pointer;
+.setting-item input[type="color"],
+.setting-item select {
+  background: #1f1f1f;
+  border: 1px solid #444;
+  color: white;
+  padding: 6px 10px;
+  border-radius: 8px;
 }
-
 .setting-item input[type="range"] {
-  width: 140px;
-  accent-color: var(--accent-color);
+  flex: 1;
 }
-
-#size-value {
-  min-width: 45px;
-  text-align: right;
-}
-
 #close-settings {
   width: 100%;
-  margin-top: 0.8rem;
+  margin-top: 1rem;
+  padding: 10px;
+  background: var(--accent-color);
+  border: none;
+  border-radius: 20px;
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
 }
 
 /* Utility */
 .hidden {
   display: none !important;
 }
-
-/* Milestone animation classes */
 .counter-pop {
   animation: pop 0.3s ease-out;
 }
-
 @keyframes pop {
   0% { transform: scale(1); }
   50% { transform: scale(1.15); }
@@ -273,10 +381,6 @@ body.widget-page {
 
 /* Responsive */
 @media (max-width: 480px) {
-  .widget-container {
-    padding: 1.5rem;
-  }
-  #counter {
-    font-size: 5rem;
-  }
+  .widget-container { padding: 1.5rem; }
+  #counter { font-size: 5rem; }
 }
