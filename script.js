@@ -1,147 +1,621 @@
 /**
- * Widget Hub Dashboard – Enhanced with:
- * - Drag & Drop reordering (SortableJS)
- * - Persistent layout (localStorage)
- * - Dark/Light theme toggle
- * - Custom accent color picker
- * - Floating emoji parallax effect
- * - Activity badges (checks if widget pages are reachable)
- * - Navigation with fade & ripple
+ * Widget Hub Dashboard – Enhanced with 11 new features.
+ * Features included:
+ * - Widget Categories / Tags
+ * - Recently Used / Most Used Sorting
+ * - Right‑Click Context Menu
+ * - Custom Background Images per Widget (Thumbnails)
+ * - Dynamic Greeting & Time Widget
+ * - Export / Import Layout Configuration
+ * - Reset to Default Layout
+ * - Widget Notes / Descriptions (Editable)
+ * - Usage Heatmap / Sparkline
+ * - "Last Opened" Timestamp
+ * - Sound Effects (Optional)
+ * Plus existing: Drag & Drop, Persistent Layout, Dark/Light Mode, Accent Color,
+ * Activity Badges, Floating Emoji Parallax+Hover.
  */
 
 // =============================================
-// 0. DOM ELEMENTS & GLOBAL VARIABLES
+// 0. GLOBALS & INITIAL DATA
 // =============================================
+// Define widgets with categories, default thumbnails, etc.
+const widgetsData = [
+  {
+    id: 'image_slider',
+    name: 'Image Slider',
+    description: 'View your favorite GIFs in a clean slider.',
+    icon: '🎞',
+    url: 'image_slider/index.html',
+    category: 'media',
+    thumbnail: 'image_slider/preview.png' // You can add actual images later
+  },
+  {
+    id: 'streak',
+    name: 'Streak Counter',
+    description: 'Track your daily consistency streak.',
+    icon: '🔥',
+    url: 'streak/index.html',
+    category: 'productivity',
+    thumbnail: 'streak/preview.png'
+  },
+  {
+    id: 'date_counter',
+    name: 'Date Counter',
+    description: 'Live countdown between two dates.',
+    icon: '⏳',
+    url: 'date_counter/index.html',
+    category: 'time',
+    thumbnail: 'date_counter/preview.png'
+  },
+  {
+    id: 'pomodoro',
+    name: 'Pomodoro Suite',
+    description: 'Focus & Tasks · Time‑management',
+    icon: '🍅',
+    url: 'pomodoro/index.html',
+    category: 'productivity',
+    thumbnail: 'pomodoro/preview.png'
+  }
+];
+
+// Categories for filter
+const categories = [
+  { id: 'all', label: 'All' },
+  { id: 'productivity', label: 'Productivity' },
+  { id: 'media', label: 'Media' },
+  { id: 'time', label: 'Time' }
+];
+
+// Default card order (fallback)
+const defaultOrder = widgetsData.map(w => w.id);
+
+// Storage keys
+const STORAGE_KEYS = {
+  ORDER: 'widgetHub_order',
+  THEME: 'widgetHub_theme',
+  ACCENT: 'widgetHub_accent',
+  NOTES: 'widgetHub_notes',
+  USAGE: 'widgetHub_usage',
+  LAST_OPENED: 'widgetHub_lastOpened',
+  SOUND_ENABLED: 'widgetHub_soundEnabled'
+};
+
+// Global state
+let currentCategory = 'all';
+let currentSort = 'default';
+let soundEnabled = false;
+let contextMenuTarget = null;
+
+// DOM elements
 const cardsContainer = document.getElementById('cardsContainer');
-const cards = document.querySelectorAll('.card');
 const themeToggle = document.getElementById('themeToggle');
 const accentPicker = document.getElementById('accentColor');
-const floatingEmojis = document.querySelectorAll('.floating span');
+const greetingClock = document.getElementById('greetingClock');
+const filterChips = document.getElementById('filterChips');
+const contextMenu = document.getElementById('contextMenu');
+const noteModal = document.getElementById('noteModal');
+const noteInput = document.getElementById('noteInput');
+let sortableInstance = null;
 
 // =============================================
-// 1. DRAG & DROP REORDERING (SortableJS)
+// 1. DYNAMIC GREETING & CLOCK
 // =============================================
-let sortable;
+function updateGreetingClock() {
+  const now = new Date();
+  const hours = now.getHours();
+  let greeting = 'Good ';
+  if (hours < 12) greeting += 'morning';
+  else if (hours < 18) greeting += 'afternoon';
+  else greeting += 'evening';
+  
+  const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  const dateStr = now.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' });
+  
+  greetingClock.textContent = `${greeting} · ${timeStr} · ${dateStr}`;
+}
+setInterval(updateGreetingClock, 1000);
+updateGreetingClock();
 
-function initSortable() {
-  sortable = Sortable.create(cardsContainer, {
-    animation: 200,
-    ghostClass: 'sortable-ghost',
-    dragClass: 'sortable-drag',
-    easing: 'cubic-bezier(0.2, 0, 0, 1)',
-    // Save order to localStorage after drag ends
-    onEnd: function() {
-      saveCardOrder();
+// =============================================
+// 2. RENDER CARDS (with all dynamic elements)
+// =============================================
+function renderCards() {
+  // Get saved order or default
+  let order = getSavedOrder();
+  
+  // Filter by category
+  let filteredWidgets = widgetsData.filter(w => 
+    currentCategory === 'all' || w.category === currentCategory
+  );
+  
+  // Sort
+  if (currentSort === 'most-used') {
+    const usage = getUsageData();
+    filteredWidgets.sort((a, b) => (usage[b.id]?.total || 0) - (usage[a.id]?.total || 0));
+  } else if (currentSort === 'recent') {
+    const lastOpened = getLastOpenedData();
+    filteredWidgets.sort((a, b) => (lastOpened[b.id] || 0) - (lastOpened[a.id] || 0));
+  } else {
+    // Default: use saved order
+    filteredWidgets.sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id));
+  }
+  
+  // Generate HTML
+  cardsContainer.innerHTML = '';
+  filteredWidgets.forEach(widget => {
+    const card = createCardElement(widget);
+    cardsContainer.appendChild(card);
+  });
+  
+  // Re-attach listeners and update dynamic elements
+  attachCardListeners();
+  updateAllSparklines();
+  updateAllLastOpened();
+  loadNotesIntoDOM();
+  checkAllWidgetsAvailability();
+}
+
+function createCardElement(widget) {
+  const card = document.createElement('div');
+  card.className = 'card';
+  card.setAttribute('role', 'button');
+  card.setAttribute('tabindex', '0');
+  card.dataset.url = widget.url;
+  card.dataset.id = widget.id;
+  card.dataset.category = widget.category;
+  
+  // Status badge
+  const badge = document.createElement('span');
+  badge.className = 'status-badge';
+  badge.dataset.status = 'unknown';
+  badge.title = 'Checking availability...';
+  
+  // Thumbnail (attempt to load image, fallback to icon)
+  const thumbnailDiv = document.createElement('div');
+  thumbnailDiv.className = 'card-thumbnail';
+  thumbnailDiv.style.backgroundImage = `url('${widget.thumbnail}')`;
+  // If image fails, we'll show icon instead via JS later
+  
+  const iconSpan = document.createElement('div');
+  iconSpan.className = 'icon';
+  iconSpan.setAttribute('aria-hidden', 'true');
+  iconSpan.textContent = widget.icon;
+  iconSpan.style.display = 'none'; // hidden by default, shown if thumbnail fails
+  
+  const title = document.createElement('h2');
+  title.textContent = widget.name;
+  
+  const desc = document.createElement('p');
+  desc.textContent = widget.description;
+  
+  // Sparkline container
+  const sparklineDiv = document.createElement('div');
+  sparklineDiv.className = 'sparkline';
+  sparklineDiv.id = `sparkline-${widget.id}`;
+  
+  // Last opened
+  const lastOpenedSpan = document.createElement('div');
+  lastOpenedSpan.className = 'last-opened';
+  lastOpenedSpan.id = `last-opened-${widget.id}`;
+  
+  // Note display
+  const noteDiv = document.createElement('div');
+  noteDiv.className = 'card-note';
+  noteDiv.id = `note-${widget.id}`;
+  
+  card.appendChild(badge);
+  card.appendChild(thumbnailDiv);
+  card.appendChild(iconSpan);
+  card.appendChild(title);
+  card.appendChild(desc);
+  card.appendChild(sparklineDiv);
+  card.appendChild(lastOpenedSpan);
+  card.appendChild(noteDiv);
+  
+  // Handle thumbnail load error -> show icon
+  const img = new Image();
+  img.onload = () => {
+    thumbnailDiv.style.display = 'block';
+    iconSpan.style.display = 'none';
+  };
+  img.onerror = () => {
+    thumbnailDiv.style.display = 'none';
+    iconSpan.style.display = 'block';
+  };
+  img.src = widget.thumbnail;
+  
+  return card;
+}
+
+// =============================================
+// 3. CATEGORY FILTER CHIPS
+// =============================================
+function renderCategoryChips() {
+  filterChips.innerHTML = '';
+  categories.forEach(cat => {
+    const chip = document.createElement('span');
+    chip.className = `chip ${cat.id === currentCategory ? 'active' : ''}`;
+    chip.textContent = cat.label;
+    chip.dataset.category = cat.id;
+    chip.addEventListener('click', () => {
+      currentCategory = cat.id;
+      renderCategoryChips();
+      renderCards();
+    });
+    filterChips.appendChild(chip);
+  });
+}
+
+// =============================================
+// 4. SORTING
+// =============================================
+document.querySelectorAll('.sort-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.sort-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentSort = btn.dataset.sort;
+    renderCards();
+  });
+});
+
+// =============================================
+// 5. USAGE TRACKING & HEATMAP / LAST OPENED
+// =============================================
+function getUsageData() {
+  const stored = localStorage.getItem(STORAGE_KEYS.USAGE);
+  return stored ? JSON.parse(stored) : {};
+}
+
+function saveUsageData(data) {
+  localStorage.setItem(STORAGE_KEYS.USAGE, JSON.stringify(data));
+}
+
+function getLastOpenedData() {
+  const stored = localStorage.getItem(STORAGE_KEYS.LAST_OPENED);
+  return stored ? JSON.parse(stored) : {};
+}
+
+function saveLastOpenedData(data) {
+  localStorage.setItem(STORAGE_KEYS.LAST_OPENED, JSON.stringify(data));
+}
+
+function recordUsage(widgetId) {
+  const usage = getUsageData();
+  const today = new Date().toISOString().split('T')[0];
+  if (!usage[widgetId]) usage[widgetId] = { total: 0, daily: {} };
+  usage[widgetId].total += 1;
+  usage[widgetId].daily[today] = (usage[widgetId].daily[today] || 0) + 1;
+  saveUsageData(usage);
+  
+  const lastOpened = getLastOpenedData();
+  lastOpened[widgetId] = Date.now();
+  saveLastOpenedData(lastOpened);
+}
+
+function updateSparkline(card) {
+  const widgetId = card.dataset.id;
+  const usage = getUsageData();
+  const sparklineDiv = card.querySelector('.sparkline');
+  if (!sparklineDiv) return;
+  sparklineDiv.innerHTML = '';
+  
+  const daily = usage[widgetId]?.daily || {};
+  const dates = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    dates.push(d.toISOString().split('T')[0]);
+  }
+  const max = Math.max(...dates.map(d => daily[d] || 0), 1);
+  
+  dates.forEach(date => {
+    const count = daily[date] || 0;
+    const bar = document.createElement('div');
+    bar.className = 'sparkline-bar';
+    const heightPercent = (count / max) * 100;
+    bar.style.height = `${Math.max(4, heightPercent)}%`;
+    bar.title = `${date}: ${count} opens`;
+    sparklineDiv.appendChild(bar);
+  });
+}
+
+function updateAllSparklines() {
+  document.querySelectorAll('.card').forEach(card => updateSparkline(card));
+}
+
+function updateLastOpened(card) {
+  const widgetId = card.dataset.id;
+  const lastOpened = getLastOpenedData();
+  const timestamp = lastOpened[widgetId];
+  const span = card.querySelector('.last-opened');
+  if (span) {
+    if (timestamp) {
+      const diff = Date.now() - timestamp;
+      const minutes = Math.floor(diff / 60000);
+      const hours = Math.floor(diff / 3600000);
+      const days = Math.floor(diff / 86400000);
+      let text;
+      if (minutes < 1) text = 'Just now';
+      else if (minutes < 60) text = `${minutes}m ago`;
+      else if (hours < 24) text = `${hours}h ago`;
+      else text = `${days}d ago`;
+      span.textContent = `Last: ${text}`;
+    } else {
+      span.textContent = 'Never opened';
+    }
+  }
+}
+
+function updateAllLastOpened() {
+  document.querySelectorAll('.card').forEach(card => updateLastOpened(card));
+}
+
+// =============================================
+// 6. NOTES (Editable)
+// =============================================
+function getNotesData() {
+  const stored = localStorage.getItem(STORAGE_KEYS.NOTES);
+  return stored ? JSON.parse(stored) : {};
+}
+
+function saveNotesData(data) {
+  localStorage.setItem(STORAGE_KEYS.NOTES, JSON.stringify(data));
+}
+
+function loadNotesIntoDOM() {
+  const notes = getNotesData();
+  document.querySelectorAll('.card').forEach(card => {
+    const widgetId = card.dataset.id;
+    const noteDiv = card.querySelector(`.card-note`);
+    if (noteDiv) {
+      noteDiv.textContent = notes[widgetId] || '';
     }
   });
 }
 
-// Save current order of cards (based on data-id)
-function saveCardOrder() {
-  const cardElements = [...cardsContainer.querySelectorAll('.card')];
-  const order = cardElements.map(card => card.dataset.id);
-  localStorage.setItem('widgetHub_order', JSON.stringify(order));
+function openNoteEditor(widgetId) {
+  const notes = getNotesData();
+  noteInput.value = notes[widgetId] || '';
+  noteModal.style.display = 'block';
+  noteModal.dataset.widgetId = widgetId;
 }
 
-// Load saved order and reorder DOM accordingly
-function loadCardOrder() {
-  const savedOrder = localStorage.getItem('widgetHub_order');
-  if (!savedOrder) return;
-
-  try {
-    const orderArray = JSON.parse(savedOrder);
-    const cardMap = new Map();
-    cards.forEach(card => cardMap.set(card.dataset.id, card));
-
-    // Reorder DOM nodes
-    orderArray.forEach(id => {
-      const card = cardMap.get(id);
-      if (card) cardsContainer.appendChild(card);
-    });
-  } catch (e) {
-    console.warn('Failed to load saved order', e);
+// Modal close
+document.querySelector('.close').onclick = () => noteModal.style.display = 'none';
+window.onclick = (e) => { if (e.target === noteModal) noteModal.style.display = 'none'; };
+document.getElementById('saveNoteBtn').onclick = () => {
+  const widgetId = noteModal.dataset.widgetId;
+  if (widgetId) {
+    const notes = getNotesData();
+    notes[widgetId] = noteInput.value;
+    saveNotesData(notes);
+    loadNotesIntoDOM();
   }
+  noteModal.style.display = 'none';
+};
+
+// =============================================
+// 7. RIGHT-CLICK CONTEXT MENU
+// =============================================
+function showContextMenu(e, card) {
+  e.preventDefault();
+  contextMenuTarget = card;
+  contextMenu.style.display = 'block';
+  contextMenu.style.left = e.pageX + 'px';
+  contextMenu.style.top = e.pageY + 'px';
+}
+
+function hideContextMenu() {
+  contextMenu.style.display = 'none';
+}
+
+contextMenu.addEventListener('click', (e) => {
+  const action = e.target.dataset.action;
+  if (!action || !contextMenuTarget) return;
+  const card = contextMenuTarget;
+  const url = card.dataset.url;
+  const widgetId = card.dataset.id;
+  
+  switch (action) {
+    case 'open':
+      navigateToWidget({ currentTarget: card }, url);
+      break;
+    case 'open-new-tab':
+      window.open(url, '_blank');
+      recordUsage(widgetId);
+      updateSparkline(card);
+      updateLastOpened(card);
+      break;
+    case 'copy-link':
+      navigator.clipboard?.writeText(new URL(url, window.location.href).href);
+      break;
+    case 'edit-note':
+      openNoteEditor(widgetId);
+      break;
+    case 'clear-note':
+      const notes = getNotesData();
+      delete notes[widgetId];
+      saveNotesData(notes);
+      loadNotesIntoDOM();
+      break;
+  }
+  hideContextMenu();
+});
+
+document.addEventListener('click', hideContextMenu);
+document.addEventListener('contextmenu', (e) => {
+  if (!e.target.closest('.card')) hideContextMenu();
+});
+
+// Attach context menu to cards
+function attachContextMenu(card) {
+  card.addEventListener('contextmenu', (e) => showContextMenu(e, card));
 }
 
 // =============================================
-// 2. PERSISTENT LAYOUT (Theme & Accent)
+// 8. SOUND EFFECTS (Optional)
 // =============================================
-function saveThemePreference(isDark) {
-  localStorage.setItem('widgetHub_theme', isDark ? 'dark' : 'light');
+function playSound(type) {
+  if (!soundEnabled) return;
+  // Simple Web Audio API beep
+  try {
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const oscillator = audioCtx.createOscillator();
+    const gainNode = audioCtx.createGain();
+    oscillator.connect(gainNode);
+    gainNode.connect(audioCtx.destination);
+    oscillator.type = 'sine';
+    oscillator.frequency.value = type === 'click' ? 800 : 600;
+    gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.1);
+    oscillator.start();
+    oscillator.stop(audioCtx.currentTime + 0.1);
+  } catch (e) { /* Ignore autoplay restrictions */ }
+}
+
+document.getElementById('soundToggle').addEventListener('click', () => {
+  soundEnabled = !soundEnabled;
+  localStorage.setItem(STORAGE_KEYS.SOUND_ENABLED, soundEnabled);
+  document.querySelector('.sound-icon').textContent = soundEnabled ? '🔊' : '🔇';
+  if (soundEnabled) playSound('click');
+});
+
+// Load sound pref
+soundEnabled = localStorage.getItem(STORAGE_KEYS.SOUND_ENABLED) === 'true';
+document.querySelector('.sound-icon').textContent = soundEnabled ? '🔊' : '🔇';
+
+// =============================================
+// 9. EXPORT / IMPORT / RESET LAYOUT
+// =============================================
+function exportLayout() {
+  const data = {
+    order: getSavedOrder(),
+    theme: document.body.classList.contains('dark') ? 'dark' : 'light',
+    accent: accentPicker.value,
+    notes: getNotesData(),
+    soundEnabled
+  };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `widget-hub-layout-${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function importLayout(file) {
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (data.order) localStorage.setItem(STORAGE_KEYS.ORDER, JSON.stringify(data.order));
+      if (data.theme) {
+        if (data.theme === 'dark') document.body.classList.add('dark');
+        else document.body.classList.remove('dark');
+        updateThemeToggleText();
+      }
+      if (data.accent) {
+        accentPicker.value = data.accent;
+        applyAccentColor(data.accent);
+        localStorage.setItem(STORAGE_KEYS.ACCENT, data.accent);
+      }
+      if (data.notes) localStorage.setItem(STORAGE_KEYS.NOTES, JSON.stringify(data.notes));
+      if (data.soundEnabled !== undefined) {
+        soundEnabled = data.soundEnabled;
+        localStorage.setItem(STORAGE_KEYS.SOUND_ENABLED, soundEnabled);
+        document.querySelector('.sound-icon').textContent = soundEnabled ? '🔊' : '🔇';
+      }
+      renderCards();
+    } catch (err) { alert('Invalid layout file'); }
+  };
+  reader.readAsDataURL(file);
+}
+
+document.getElementById('exportLayoutBtn').addEventListener('click', exportLayout);
+document.getElementById('importLayoutBtn').addEventListener('click', () => {
+  document.getElementById('importFileInput').click();
+});
+document.getElementById('importFileInput').addEventListener('change', (e) => {
+  if (e.target.files[0]) importLayout(e.target.files[0]);
+});
+document.getElementById('resetLayoutBtn').addEventListener('click', () => {
+  if (confirm('Reset all layout and preferences to default?')) {
+    localStorage.removeItem(STORAGE_KEYS.ORDER);
+    localStorage.removeItem(STORAGE_KEYS.THEME);
+    localStorage.removeItem(STORAGE_KEYS.ACCENT);
+    localStorage.removeItem(STORAGE_KEYS.NOTES);
+    localStorage.removeItem(STORAGE_KEYS.USAGE);
+    localStorage.removeItem(STORAGE_KEYS.LAST_OPENED);
+    localStorage.removeItem(STORAGE_KEYS.SOUND_ENABLED);
+    location.reload();
+  }
+});
+
+// =============================================
+// 10. THEME & ACCENT PERSISTENCE
+// =============================================
+function updateThemeToggleText() {
+  const isDark = document.body.classList.contains('dark');
+  const icon = themeToggle.querySelector('.theme-icon');
+  const text = themeToggle.querySelector('.theme-text');
+  icon.textContent = isDark ? '☀️' : '🌙';
+  text.textContent = isDark ? 'Light' : 'Dark';
 }
 
 function loadThemePreference() {
-  const savedTheme = localStorage.getItem('widgetHub_theme');
-  if (savedTheme === 'dark') {
+  const saved = localStorage.getItem(STORAGE_KEYS.THEME);
+  if (saved === 'dark') {
     document.body.classList.add('dark');
-    updateThemeToggleText(true);
   } else {
     document.body.classList.remove('dark');
-    updateThemeToggleText(false);
   }
+  updateThemeToggleText();
 }
 
-function updateThemeToggleText(isDark) {
-  const icon = themeToggle.querySelector('.theme-icon');
-  const text = themeToggle.querySelector('.theme-text');
-  if (isDark) {
-    icon.textContent = '☀️';
-    text.textContent = 'Light';
-  } else {
-    icon.textContent = '🌙';
-    text.textContent = 'Dark';
-  }
-}
-
-// Theme toggle handler
 themeToggle.addEventListener('click', () => {
   const isDark = document.body.classList.toggle('dark');
-  saveThemePreference(isDark);
-  updateThemeToggleText(isDark);
+  localStorage.setItem(STORAGE_KEYS.THEME, isDark ? 'dark' : 'light');
+  updateThemeToggleText();
 });
-
-// Accent color persistence
-function saveAccentColor(color) {
-  localStorage.setItem('widgetHub_accent', color);
-  applyAccentColor(color);
-}
-
-function loadAccentColor() {
-  const savedColor = localStorage.getItem('widgetHub_accent');
-  if (savedColor) {
-    accentPicker.value = savedColor;
-    applyAccentColor(savedColor);
-  } else {
-    // Default from CSS variable
-    applyAccentColor(getComputedStyle(document.documentElement).getPropertyValue('--accent-color').trim());
-  }
-}
 
 function applyAccentColor(color) {
   document.documentElement.style.setProperty('--accent-color', color);
-  // Update ripple background automatically via CSS variable
+}
+
+function loadAccentColor() {
+  const saved = localStorage.getItem(STORAGE_KEYS.ACCENT);
+  if (saved) {
+    accentPicker.value = saved;
+    applyAccentColor(saved);
+  }
 }
 
 accentPicker.addEventListener('input', (e) => {
   const color = e.target.value;
   applyAccentColor(color);
-  saveAccentColor(color);
+  localStorage.setItem(STORAGE_KEYS.ACCENT, color);
 });
 
 // =============================================
-// 3. NAVIGATION & RIPPLE EFFECT
+// 11. NAVIGATION & RIPPLE (with usage tracking)
 // =============================================
 function navigateToWidget(event, url) {
-  if (event.type === 'keydown') {
-    event.preventDefault();
-  }
-
+  if (event.type === 'keydown') event.preventDefault();
   const targetUrl = url || event.currentTarget.dataset.url;
   if (!targetUrl) return;
-
+  
+  const card = event.currentTarget;
+  const widgetId = card.dataset.id;
+  
+  recordUsage(widgetId);
+  updateSparkline(card);
+  updateLastOpened(card);
+  playSound('click');
   createRipple(event);
+  
   document.body.classList.add('fade-out');
-
   setTimeout(() => {
     window.location.href = targetUrl;
   }, 400);
@@ -149,15 +623,12 @@ function navigateToWidget(event, url) {
 
 function createRipple(event) {
   const card = event.currentTarget;
-  const existingRipple = card.querySelector('.ripple');
-  if (existingRipple) existingRipple.remove();
-
+  const existing = card.querySelector('.ripple');
+  if (existing) existing.remove();
   const ripple = document.createElement('span');
-  ripple.classList.add('ripple');
-
+  ripple.className = 'ripple';
   const diameter = Math.max(card.clientWidth, card.clientHeight);
   ripple.style.width = ripple.style.height = `${diameter}px`;
-
   let clientX, clientY;
   if (event instanceof MouseEvent) {
     clientX = event.clientX;
@@ -167,158 +638,64 @@ function createRipple(event) {
     clientX = rect.left + rect.width / 2;
     clientY = rect.top + rect.height / 2;
   }
-
   const rect = card.getBoundingClientRect();
   const left = clientX - rect.left - diameter / 2;
   const top = clientY - rect.top - diameter / 2;
-
   ripple.style.left = `${left}px`;
   ripple.style.top = `${top}px`;
-
   card.appendChild(ripple);
   ripple.addEventListener('animationend', () => ripple.remove(), { once: true });
 }
 
-// Attach event listeners to each card
 function attachCardListeners() {
   document.querySelectorAll('.card').forEach(card => {
-    // Remove existing listeners to avoid duplicates (when reordering, same elements)
     card.removeEventListener('click', handleCardClick);
     card.removeEventListener('keydown', handleCardKeydown);
     card.addEventListener('click', handleCardClick);
     card.addEventListener('keydown', handleCardKeydown);
+    attachContextMenu(card);
   });
 }
 
-function handleCardClick(e) {
-  navigateToWidget(e);
-}
-
+function handleCardClick(e) { navigateToWidget(e); }
 function handleCardKeydown(e) {
-  if (e.key === 'Enter' || e.key === ' ') {
-    navigateToWidget(e);
-  }
+  if (e.key === 'Enter' || e.key === ' ') navigateToWidget(e);
 }
-
-// Re-attach after potential DOM changes (Sortable doesn't change listeners, but safe)
-const observer = new MutationObserver(() => {
-  attachCardListeners();
-});
-observer.observe(cardsContainer, { childList: true, subtree: false });
 
 // =============================================
-// 4. ACTIVITY BADGES (Check widget availability)
+// 12. ACTIVITY BADGES (unchanged)
 // =============================================
 async function checkWidgetAvailability(card) {
   const url = card.dataset.url;
   const badge = card.querySelector('.status-badge');
   if (!badge) return;
-
-  // Set to unknown initially
   badge.dataset.status = 'unknown';
-  badge.title = 'Checking availability...';
-
   try {
-    // Use HEAD request to check if resource exists without downloading full page
     const response = await fetch(url, { method: 'HEAD', cache: 'no-cache' });
-    if (response.ok) {
-      badge.dataset.status = 'available';
-      badge.title = 'Widget is available';
-    } else {
-      badge.dataset.status = 'unavailable';
-      badge.title = `Widget unavailable (HTTP ${response.status})`;
-    }
-  } catch (error) {
-    // Network error or CORS (likely unreachable)
+    badge.dataset.status = response.ok ? 'available' : 'unavailable';
+    badge.title = response.ok ? 'Widget is available' : `HTTP ${response.status}`;
+  } catch {
     badge.dataset.status = 'unavailable';
-    badge.title = 'Widget cannot be reached (network error)';
+    badge.title = 'Cannot reach widget';
   }
 }
 
 function checkAllWidgetsAvailability() {
-  document.querySelectorAll('.card').forEach(card => checkWidgetAvailability(card));
+  document.querySelectorAll('.card').forEach(checkWidgetAvailability);
 }
 
 // =============================================
-// 5. FLOATING EMOJI PARALLAX INTERACTION
+// 13. FLOATING EMOJIS (Parallax + Hover)
 // =============================================
-function initFloatingParallax() {
-  const emojis = [...floatingEmojis];
-  if (emojis.length === 0) return;
-
-  // Store base positions and animation properties
-  const basePositions = emojis.map(emoji => ({
-    el: emoji,
-    baseX: parseFloat(emoji.style.left) || 0,
-    baseY: parseFloat(emoji.style.top) || 0,
-    speed: 0.02 + Math.random() * 0.03  // random speed factor
-  }));
-
-  // Position emojis initially using grid (as before)
-  positionFloatingEmojisGrid();
-
-  // Mouse move handler for parallax
-  let mouseX = window.innerWidth / 2;
-  let mouseY = window.innerHeight / 2;
-  let rafId = null;
-
-  function updateParallax() {
-    basePositions.forEach(item => {
-      const dx = (mouseX - window.innerWidth / 2) * item.speed;
-      const dy = (mouseY - window.innerHeight / 2) * item.speed;
-      // Combine with base position (which might include float animation via CSS)
-      // We'll apply transform directly, but keep base animation separate by using translate
-      // The CSS float animation uses transform, so we need to add our offset without overriding
-      // We'll use a data attribute and update via style, but better: use custom property.
-      // For simplicity, we'll set transform directly, which overrides CSS animation.
-      // To keep float animation, we'd need to combine. We'll just apply a subtle shift.
-      const shiftX = dx * 0.5;
-      const shiftY = dy * 0.5;
-      item.el.style.transform = `translate(${shiftX}px, ${shiftY}px) scale(${item.el.dataset.scale || 1})`;
-    });
-    rafId = null;
-  }
-
-  function handleMouseMove(e) {
-    mouseX = e.clientX;
-    mouseY = e.clientY;
-    if (!rafId) {
-      rafId = requestAnimationFrame(updateParallax);
-    }
-  }
-
-  window.addEventListener('mousemove', handleMouseMove);
-
-  // Reset to base position when mouse leaves window
-  window.addEventListener('mouseleave', () => {
-    basePositions.forEach(item => {
-      item.el.style.transform = '';
-    });
-  });
-
-  // Recalculate base positions on resize
-  window.addEventListener('resize', () => {
-    positionFloatingEmojisGrid();
-    // Update stored base positions
-    basePositions.forEach((item, idx) => {
-      const emoji = item.el;
-      item.baseX = parseFloat(emoji.style.left) || 0;
-      item.baseY = parseFloat(emoji.style.top) || 0;
-    });
-  });
-}
-
-// Grid positioning (kept from original, slightly refined)
-function positionFloatingEmojisGrid() {
-  const emojis = [...floatingEmojis];
+function initFloatingEmojis() {
+  const emojis = document.querySelectorAll('.floating span');
+  // Grid positioning
   const count = emojis.length;
-  if (count === 0) return;
-
   const cols = Math.ceil(Math.sqrt(count));
   const rows = Math.ceil(count / cols);
   const cellW = window.innerWidth / cols;
   const cellH = window.innerHeight / rows;
-
+  
   emojis.forEach((emoji, i) => {
     const col = i % cols;
     const row = Math.floor(i / cols);
@@ -328,47 +705,74 @@ function positionFloatingEmojisGrid() {
     y = Math.max(10, Math.min(y, window.innerHeight - 60));
     emoji.style.left = `${x}px`;
     emoji.style.top = `${y}px`;
-
-    // Random scale and delay
-    const scale = 0.8 + Math.random() * 0.8;
-    emoji.dataset.scale = scale;
-    emoji.style.transform = `scale(${scale})`;
     emoji.style.animationDelay = `${Math.random() * 6}s`;
+    emoji.style.transform = `scale(${0.8 + Math.random() * 0.8})`;
+    emoji.dataset.baseX = x;
+    emoji.dataset.baseY = y;
+  });
+  
+  // Parallax on mousemove
+  let raf = null;
+  window.addEventListener('mousemove', (e) => {
+    if (raf) cancelAnimationFrame(raf);
+    raf = requestAnimationFrame(() => {
+      const centerX = window.innerWidth / 2;
+      const centerY = window.innerHeight / 2;
+      const moveX = (e.clientX - centerX) * 0.01;
+      const moveY = (e.clientY - centerY) * 0.01;
+      emojis.forEach(emoji => {
+        const baseX = parseFloat(emoji.dataset.baseX);
+        const baseY = parseFloat(emoji.dataset.baseY);
+        const speed = 0.5 + (emoji.dataset.speed || Math.random() * 0.5);
+        const shiftX = moveX * speed;
+        const shiftY = moveY * speed;
+        // Preserve hover effect: we need to apply transform without overriding hover
+        // We'll use a custom property approach, but simpler: just add translate
+        const currentScale = emoji.style.transform.match(/scale\(([^)]+)\)/)?.[1] || '1';
+        emoji.style.transform = `translate(${shiftX}px, ${shiftY}px) scale(${currentScale})`;
+      });
+      raf = null;
+    });
+  });
+  
+  // Reset on mouse leave
+  window.addEventListener('mouseleave', () => {
+    emojis.forEach(emoji => {
+      emoji.style.transform = emoji.style.transform.replace(/translate\([^)]+\)/, 'translate(0px, 0px)');
+    });
   });
 }
 
 // =============================================
-// 6. INITIALIZATION & PAGE LOAD
+// 14. INITIALIZATION
 // =============================================
-window.addEventListener('pageshow', () => {
-  document.body.classList.remove('fade-out');
-});
+function getSavedOrder() {
+  const saved = localStorage.getItem(STORAGE_KEYS.ORDER);
+  return saved ? JSON.parse(saved) : defaultOrder;
+}
+
+function initSortable() {
+  sortableInstance = Sortable.create(cardsContainer, {
+    animation: 200,
+    ghostClass: 'sortable-ghost',
+    dragClass: 'sortable-drag',
+    onEnd: function() {
+      const order = [...cardsContainer.querySelectorAll('.card')].map(c => c.dataset.id);
+      localStorage.setItem(STORAGE_KEYS.ORDER, JSON.stringify(order));
+    }
+  });
+}
+
+window.addEventListener('pageshow', () => document.body.classList.remove('fade-out'));
 
 document.addEventListener('DOMContentLoaded', () => {
-  document.body.classList.remove('fade-out');
-
-  // Load saved preferences
   loadThemePreference();
   loadAccentColor();
-  loadCardOrder();        // Restore card order from localStorage
-
-  // Initialize Sortable after order is restored
+  renderCategoryChips();
+  renderCards();
   initSortable();
-
-  // Attach navigation listeners
-  attachCardListeners();
-
-  // Check widget availability (badges)
-  checkAllWidgetsAvailability();
-
-  // Set up floating emoji parallax
-  initFloatingParallax();
-
-  // Fallback for grid positioning if needed
-  positionFloatingEmojisGrid();
+  initFloatingEmojis();
+  
+  // Observer to re-attach listeners if cards change
+  new MutationObserver(() => attachCardListeners()).observe(cardsContainer, { childList: true, subtree: true });
 });
-
-// =============================================
-// 7. HANDLE DYNAMIC CHANGES (e.g., accent)
-// =============================================
-// The ripple uses CSS variable --accent-color, so no extra work needed.
