@@ -14,6 +14,7 @@ let currentSessionStart = null;
 let pendingPartialAction = null;
 let pendingPartialElapsed = 0;
 let partialRemainingTime = 0;
+let currentSessionInterruptions = []; // interruptions for the current session
 
 // Extra time tracking
 let extraTimeSeconds = 0;
@@ -83,7 +84,6 @@ const resetBtn = $('timer-reset');
 const skipBtn = $('timer-skip');
 const autoStartCheck = $('auto-start-checkbox');
 const todayPomodorosSpan = $('today-pomodoros');
-const halfPomodorosSpan = $('half-pomodoros');
 const streakDaysSpan = $('streak-days');
 const quoteText = $('quote-text');
 
@@ -361,6 +361,7 @@ function timerTick() {
 function startTimer() {
   if (isRunning) return;
   resetExtraTime();
+  currentSessionInterruptions = [];
   isRunning = true;
   if (startPauseBtn) startPauseBtn.textContent = 'Pause';
   if (logPartialContainer) logPartialContainer.style.display = 'none';
@@ -402,6 +403,7 @@ function stopTimer() {
 function resetTimer() {
   stopTimer();
   resetExtraTime();
+  currentSessionInterruptions = [];
   timeLeft = (currentSessionType === 'work' ? settings.workDuration : currentSessionType === 'shortBreak' ? settings.shortBreak : settings.longBreak) * 60;
   totalSessionTime = timeLeft;
   updateTimerDisplay();
@@ -467,6 +469,7 @@ function applyPartialToTask(option) {
     }
     if (activeTask.completedPomodoros >= activeTask.estimatedPomodoros) {
       activeTask.completed = true;
+      activeTask.completedAt = new Date().toISOString();
       if (settings.taskCompleteSound) playTaskCompleteSound();
       if (activeTaskId === activeTask.id) activeTaskId = null;
     }
@@ -489,12 +492,13 @@ function logElapsedPortion(elapsed, isHalf = true) {
     duration: Math.floor(elapsed / 60),
     timestamp: new Date().toISOString(),
     taskName: (currentSessionType === 'work' && activeTask) ? activeTask.title : null,
-    interruptions: [],
+    interruptions: [...currentSessionInterruptions],
     partial: true,
     halfPomodoro: isHalf
   };
   sessionsHistory.push(session);
   if (currentSessionType === 'work') halfPomodoros++;
+  currentSessionInterruptions = [];
   saveToStorage();
   renderHistoryList();
   updateQuickStats();
@@ -560,14 +564,14 @@ function completeSession(isSkipped = false) {
         duration: Math.floor(remaining / 60),
         timestamp: sessionEndTime.toISOString(),
         taskName: (currentSessionType === 'work' && activeTask) ? activeTask.title : null,
-        interruptions: window.pendingInterruptions ? [...window.pendingInterruptions] : [],
+        interruptions: [...currentSessionInterruptions],
         partial: true,
         halfPomodoro: true,
         extraTime: 0
       };
       sessionsHistory.push(remainingSession);
       if (currentSessionType === 'work') halfPomodoros++;
-      window.pendingInterruptions = [];
+      currentSessionInterruptions = [];
       
       if (activeTask) {
         pendingPartialAction = 'assign-remaining';
@@ -590,11 +594,11 @@ function completeSession(isSkipped = false) {
       duration: totalSessionTime / 60,
       timestamp: sessionEndTime.toISOString(),
       taskName: (currentSessionType === 'work' && activeTask) ? activeTask.title : null,
-      interruptions: window.pendingInterruptions ? [...window.pendingInterruptions] : [],
+      interruptions: [...currentSessionInterruptions],
       extraTime: extra
     };
     sessionsHistory.push(session);
-    window.pendingInterruptions = [];
+    currentSessionInterruptions = [];
   }
 
   if (currentSessionType === 'work' && !isSkipped && !isHalf) {
@@ -604,6 +608,7 @@ function completeSession(isSkipped = false) {
       activeTask.completedPomodoros = Math.min(activeTask.completedPomodoros + 1, activeTask.estimatedPomodoros);
       if (activeTask.completedPomodoros >= activeTask.estimatedPomodoros) {
         activeTask.completed = true;
+        activeTask.completedAt = new Date().toISOString();
         if (settings.taskCompleteSound) playTaskCompleteSound();
         if (activeTaskId === activeTask.id) activeTaskId = null;
       }
@@ -624,6 +629,7 @@ function applyRemainingTaskOption(option) {
     }
     if (activeTask.completedPomodoros >= activeTask.estimatedPomodoros) {
       activeTask.completed = true;
+      activeTask.completedAt = new Date().toISOString();
       if (settings.taskCompleteSound) playTaskCompleteSound();
       if (activeTaskId === activeTask.id) activeTaskId = null;
     }
@@ -784,6 +790,11 @@ function renderTaskItem(task, container, isCompleted = false) {
   const checkbox = taskEl.querySelector('.task-checkbox');
   checkbox.addEventListener('change', (e) => {
     task.completed = e.target.checked;
+    if (task.completed) {
+      task.completedAt = new Date().toISOString();
+    } else {
+      task.completedAt = null;
+    }
     if (task.completed && activeTaskId === task.id) activeTaskId = null;
     saveToStorage();
     renderTasks();
@@ -829,6 +840,9 @@ function showTaskDetail(task) {
   html += `<p><strong>Pomodoros:</strong> ${task.completedPomodoros}/${task.estimatedPomodoros}</p>`;
   if (task.notes) html += `<p><strong>Notes:</strong> ${escapeHtml(task.notes)}</p>`;
   html += `<p><strong>Created:</strong> ${new Date(task.createdAt).toLocaleString()}</p>`;
+  if (task.completedAt) {
+    html += `<p><strong>Completed:</strong> ${new Date(task.completedAt).toLocaleString()}</p>`;
+  }
   taskDetailBody.innerHTML = html;
   taskDetailModal.style.display = 'flex';
 }
@@ -843,7 +857,16 @@ function saveTask() {
     const task = tasks.find(t => t.id === id);
     if (task) { task.title = title; task.estimatedPomodoros = estimate; task.notes = notes; }
   } else {
-    tasks.push({ id: Date.now().toString(), title, estimatedPomodoros: estimate, completedPomodoros: 0, notes, completed: false, createdAt: new Date().toISOString() });
+    tasks.push({ 
+      id: Date.now().toString(), 
+      title, 
+      estimatedPomodoros: estimate, 
+      completedPomodoros: 0, 
+      notes, 
+      completed: false, 
+      createdAt: new Date().toISOString(),
+      completedAt: null
+    });
   }
   saveToStorage(); renderTasks(); if (taskModal) taskModal.style.display = 'none';
 }
@@ -931,7 +954,7 @@ function updateChart(tab) {
 
 function renderHistoryList() {
   if (!historyListDiv) return;
-  historyListDiv.innerHTML = sessionsHistory.slice(-30).reverse().map((s, idx) => {
+  historyListDiv.innerHTML = sessionsHistory.slice(-30).reverse().map((s) => {
     const displayType = s.taskName ? s.taskName : s.type;
     const halfMark = s.halfPomodoro ? ' ½' : '';
     const partialMark = s.partial ? ' ⏸️' : '';
@@ -939,7 +962,7 @@ function renderHistoryList() {
     if (s.extraTime) {
       durationText = `${s.duration} min + ${Math.floor(s.extraTime / 60)} min (Extra)`;
     }
-    return `<div class="history-item" data-session-index="${idx}">
+    return `<div class="history-item" data-session-id="${s.id}">
       <span>${displayType} · ${durationText}${halfMark}${partialMark}</span>
       <span>${new Date(s.timestamp).toLocaleString()}</span>
     </div>`;
@@ -969,7 +992,6 @@ function showSessionDetail(session) {
 
 function updateQuickStats() {
   if (todayPomodorosSpan) todayPomodorosSpan.textContent = todayPomodoros;
-  if (halfPomodorosSpan) halfPomodorosSpan.textContent = halfPomodoros;
   if (streakDaysSpan) streakDaysSpan.textContent = streakDays;
 }
 
@@ -1061,26 +1083,12 @@ function init() {
   if (saveInterruptBtn) saveInterruptBtn.addEventListener('click', () => {
     const reason = interruptReason?.value.trim();
     if (reason) {
-      if (!window.pendingInterruptions) window.pendingInterruptions = [];
-      window.pendingInterruptions.push({ reason, time: new Date().toISOString() });
+      currentSessionInterruptions.push({ reason, time: new Date().toISOString() });
     }
     if (interruptModal) interruptModal.style.display = 'none';
     if (interruptReason) interruptReason.value = '';
     if (!isRunning && !pendingInterruption) startTimer();
   });
-
-  const originalComplete = completeSession;
-  completeSession = function(isSkipped) {
-    originalComplete.call(this, isSkipped);
-    if (window.pendingInterruptions && sessionsHistory.length) {
-      const last = sessionsHistory[sessionsHistory.length-1];
-      if (!last.interruptions) last.interruptions = [];
-      last.interruptions.push(...window.pendingInterruptions);
-      window.pendingInterruptions = [];
-      saveToStorage();
-      renderHistoryList();
-    }
-  };
 
   if (logPartialBtn) logPartialBtn.addEventListener('click', showPartialOptions);
   if (partialResetOption) partialResetOption.addEventListener('click', logPartialSessionAndReset);
@@ -1130,8 +1138,9 @@ function init() {
   if (historyListDiv) historyListDiv.addEventListener('click', (e) => {
     const item = e.target.closest('.history-item');
     if (item) {
-      const idx = parseInt(item.dataset.sessionIndex);
-      if (!isNaN(idx) && sessionsHistory[idx]) showSessionDetail(sessionsHistory[idx]);
+      const sessionId = item.dataset.sessionId;
+      const session = sessionsHistory.find(s => s.id === sessionId);
+      if (session) showSessionDetail(session);
     }
   });
 
