@@ -65,7 +65,7 @@
 
   <!-- Create/Edit Modal -->
   <div id="widget-modal" class="modal-overlay hidden">
-    <div class="modal-card">
+    <div class="modal-card modal-wide">
       <h3 id="modal-title">Create New Slider</h3>
       <form id="widget-form">
         <input type="hidden" id="widget-id">
@@ -73,11 +73,17 @@
           <label for="widget-title-input">Slider Title</label>
           <input type="text" id="widget-title-input" required placeholder="My Awesome Slider">
         </div>
+  
         <div class="form-group">
-          <label>Image URLs (one per line)</label>
-          <textarea id="widget-images-input" rows="5" placeholder="https://example.com/image1.jpg&#10;https://example.com/image2.gif"></textarea>
-          <p class="form-hint">Enter full URLs to images (jpg, png, gif, etc.)</p>
+          <label>Images</label>
+          <div id="images-list" class="images-list"></div>
+          <button type="button" id="add-image-btn" class="secondary-btn add-image-btn">+ Add Image</button>
+          <p class="form-hint">
+            Enter image URLs or upload files (converted to data URLs).<br>
+            ⚠️ Large files may exceed localStorage limits.
+          </p>
         </div>
+  
         <div class="modal-actions">
           <button type="button" id="modal-cancel" class="secondary-btn">Cancel</button>
           <button type="submit" class="primary-btn">Save Slider</button>
