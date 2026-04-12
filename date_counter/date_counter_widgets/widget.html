@@ -1,40 +1,59 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>Date Counter Widget</title>
-<link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8">
+  <title>Date & Time Counter Widget</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <a href="../index.html" class="back-btn" title="Back to dashboard">←</a>
 
   <div class="container">
+    <!-- INPUT SECTION (shown before starting) -->
     <div id="input-section">
-      <h1 id="counter-title">Date Counter Streak</h1>
+      <h1 id="counter-title">✨ Countdown Studio</h1>
 
-      <input type="text" id="title" placeholder="Enter Title">
-      <input type="date" id="start-date">
-      <input type="date" id="end-date">
-      <textarea id="quote" placeholder="Enter an quote or message"></textarea>
+      <input type="text" id="title" placeholder="Event Title">
+      
+      <!-- datetime-local for both date and time -->
+      <div class="datetime-group">
+        <label>Start</label>
+        <input type="datetime-local" id="start-datetime">
+      </div>
+      <div class="datetime-group">
+        <label>End</label>
+        <input type="datetime-local" id="end-datetime">
+      </div>
+
+      <!-- Color customizer -->
+      <div class="color-picker-group">
+        <label>🎨 Accent Color</label>
+        <input type="color" id="accent-color" value="#ff6a00">
+      </div>
+
+      <textarea id="quote" placeholder="Add a quote or message..."></textarea>
 
       <button id="start-btn" type="button">Start Counter</button>
     </div>
 
+    <!-- COUNTER DISPLAY SECTION (shown after starting) -->
     <div id="counter-section" style="display:none;">
       <h1 id="display-title"></h1>
 
+      <!-- Countdown blocks -->
       <div class="counter-panel">
         <div id="countdown">
-          <div><span id="years">0</span> Years</div>
-          <div><span id="months">0</span> Months</div>
-          <div><span id="weeks">0</span> Weeks</div>
-          <div><span id="days">0</span> Days</div>
-          <div><span id="hours">0</span> Hours</div>
-          <div><span id="minutes">0</span> Minutes</div>
-          <div><span id="seconds">0</span> Seconds</div>
+          <div><span id="years">0</span> <small>Years</small></div>
+          <div><span id="months">0</span> <small>Months</small></div>
+          <div><span id="weeks">0</span> <small>Weeks</small></div>
+          <div><span id="days">0</span> <small>Days</small></div>
+          <div><span id="hours">0</span> <small>Hours</small></div>
+          <div><span id="minutes">0</span> <small>Minutes</small></div>
+          <div><span id="seconds">0</span> <small>Seconds</small></div>
         </div>
       </div>
 
+      <!-- Progress bar with runner -->
       <div class="progress-container">
         <img src="runner.gif" class="runner" id="runner" alt="runner">
         <div class="progress-bar">
@@ -42,24 +61,28 @@
         </div>
       </div>
 
+      <!-- Controls -->
       <div class="controls">
-        <button id="add-milestone-btn">Add Milestone</button>
-        <button id="view-milestones-btn">View Milestones</button>
-        <button id="toggle-tools-btn">Hide Tools</button>
+        <button id="add-milestone-btn">➕ Add Milestone</button>
+        <button id="view-milestones-btn">📋 View Milestones</button>
+        <button id="toggle-tools-btn">👁️ Hide Tools</button>
       </div>
 
-      <p id="display-quote"></p>
-      <button id="reset-btn">Reset</button>
+      <!-- Quote display (redesigned) -->
+      <blockquote id="display-quote"></blockquote>
+
+      <button id="reset-btn">↻ Reset</button>
     </div>
   </div>
 
+  <!-- Milestone Modal -->
   <div id="milestone-modal" class="modal">
     <div class="modal-content">
       <span class="close">&times;</span>
       <h2>Add Milestone</h2>
       <input type="text" id="ms-title" placeholder="Milestone Title">
-      <input type="date" id="ms-start">
-      <input type="date" id="ms-end">
+      <input type="datetime-local" id="ms-start">
+      <input type="datetime-local" id="ms-end">
       <button id="ms-save">Save Milestone</button>
     </div>
   </div>
