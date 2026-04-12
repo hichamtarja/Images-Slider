@@ -16,7 +16,7 @@
       <!-- FRONT SIDE -->
       <div class="front">
         <div class="widget-container" id="widgetContainer">
-          <!-- Header with emoji, title, and three-dot menu -->
+          <!-- Header -->
           <div class="widget-header">
             <div class="title-section">
               <span class="widget-emoji" id="widgetEmoji">🔥</span>
@@ -31,11 +31,8 @@
             </div>
           </div>
 
-          <!-- Flip hint (small icon to flip to back) -->
-          <button id="flip-to-back" class="flip-hint" title="View last streak">🔄</button>
-
-          <!-- Counter display -->
-          <div class="counter-wrapper">
+          <!-- Counter (click to flip) -->
+          <div class="counter-wrapper" id="counterWrapper">
             <div id="counter">0</div>
             <div id="streak-label">day streak</div>
           </div>
@@ -49,7 +46,7 @@
           <!-- Status message -->
           <p id="status">Start your streak 🚀</p>
 
-          <!-- Control buttons (icon only) -->
+          <!-- Control buttons -->
           <div class="buttons">
             <button class="streak-btn" id="decrease-btn" title="Decrease">−</button>
             <button class="streak-btn" id="increase-btn" title="Increase">+</button>
@@ -60,7 +57,7 @@
       <!-- BACK SIDE (Last streak info) -->
       <div class="back">
         <div class="widget-container back-container">
-          <button id="flip-to-front" class="flip-hint back-flip">↩ Back</button>
+          <button id="flip-to-front" class="back-flip-btn">↩ Back</button>
           <h3>Last Streak</h3>
           <div id="last-streak-info">
             <p id="last-streak-date">Never</p>
@@ -74,75 +71,70 @@
     </div>
   </div>
 
-  <!-- Customization Panel (hidden by default) -->
+  <!-- Draggable Customization Panel -->
   <div id="settings-panel" class="settings-panel hidden">
-    <h3>Customize Widget</h3>
-    
-    <!-- Emoji -->
-    <div class="setting-item">
-      <label>Widget Emoji</label>
-      <input type="text" id="emoji-input" maxlength="2" placeholder="🔥">
+    <div class="settings-header" id="settings-header">
+      <h3>Customize Widget</h3>
+      <span class="drag-handle">⠿</span>
     </div>
-
-    <!-- Font Family -->
-    <div class="setting-item">
-      <label>Font</label>
-      <select id="font-select">
-        <option value="'Inter', system-ui, sans-serif">Inter (Default)</option>
-        <option value="'Georgia', serif">Georgia</option>
-        <option value="'Courier New', monospace">Monospace</option>
-        <option value="'Poppins', sans-serif">Poppins</option>
-      </select>
+    <div class="settings-content">
+      <!-- Emoji -->
+      <div class="setting-item">
+        <label>Emoji</label>
+        <input type="text" id="emoji-input" maxlength="2" placeholder="🔥">
+      </div>
+      <!-- Font -->
+      <div class="setting-item">
+        <label>Font</label>
+        <select id="font-select">
+          <option value="'Inter', system-ui, sans-serif">Inter (Default)</option>
+          <option value="'Georgia', serif">Georgia</option>
+          <option value="'Courier New', monospace">Monospace</option>
+          <option value="'Poppins', sans-serif">Poppins</option>
+        </select>
+      </div>
+      <!-- Text Color -->
+      <div class="setting-item">
+        <label>Text Color</label>
+        <input type="color" id="font-color-picker" value="#ffffff">
+      </div>
+      <!-- Background Type -->
+      <div class="setting-item">
+        <label>Background</label>
+        <select id="bg-type-select">
+          <option value="solid">Solid</option>
+          <option value="gradient">Gradient</option>
+        </select>
+      </div>
+      <!-- Solid Color -->
+      <div class="setting-item" id="solid-color-item">
+        <label>BG Color</label>
+        <input type="color" id="bg-color-picker" value="#1f1f1f">
+      </div>
+      <!-- Gradient Colors -->
+      <div class="setting-item hidden" id="gradient-color-item">
+        <label>Start</label>
+        <input type="color" id="gradient-start-picker" value="#1f1f1f">
+        <label>End</label>
+        <input type="color" id="gradient-end-picker" value="#2a2a2a">
+      </div>
+      <!-- Accent -->
+      <div class="setting-item">
+        <label>Accent</label>
+        <input type="color" id="accent-picker" value="#ff6a00">
+      </div>
+      <!-- Counter Color -->
+      <div class="setting-item">
+        <label>Counter</label>
+        <input type="color" id="counter-color-picker" value="#ffffff">
+      </div>
+      <!-- Size -->
+      <div class="setting-item">
+        <label>Size: <span id="size-value">100</span>%</label>
+        <input type="range" id="size-slider" min="50" max="150" value="100" step="5">
+      </div>
+      <button id="close-settings" class="streak-btn done-btn">Done</button>
     </div>
-
-    <!-- Font Color -->
-    <div class="setting-item">
-      <label>Text Color</label>
-      <input type="color" id="font-color-picker" value="#ffffff">
-    </div>
-
-    <!-- Background Type -->
-    <div class="setting-item">
-      <label>Background</label>
-      <select id="bg-type-select">
-        <option value="solid">Solid</option>
-        <option value="gradient">Gradient</option>
-      </select>
-    </div>
-
-    <!-- Solid Color Picker -->
-    <div class="setting-item" id="solid-color-item">
-      <label>BG Color</label>
-      <input type="color" id="bg-color-picker" value="#1f1f1f">
-    </div>
-
-    <!-- Gradient Colors -->
-    <div class="setting-item hidden" id="gradient-color-item">
-      <label>Gradient Start</label>
-      <input type="color" id="gradient-start-picker" value="#1f1f1f">
-      <label>Gradient End</label>
-      <input type="color" id="gradient-end-picker" value="#2a2a2a">
-    </div>
-
-    <!-- Accent Color (used for progress bar and buttons) -->
-    <div class="setting-item">
-      <label>Accent Color</label>
-      <input type="color" id="accent-picker" value="#ff6a00">
-    </div>
-
-    <!-- Counter Color -->
-    <div class="setting-item">
-      <label>Counter Color</label>
-      <input type="color" id="counter-color-picker" value="#ffffff">
-    </div>
-
-    <!-- Widget Size -->
-    <div class="setting-item">
-      <label>Size: <span id="size-value">100</span>%</label>
-      <input type="range" id="size-slider" min="50" max="150" value="100" step="5">
-    </div>
-
-    <button id="close-settings" class="streak-btn">Done</button>
   </div>
 
   <script src="script.js"></script>
