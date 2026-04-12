@@ -4,7 +4,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
   <title>🍅 Pomodoro Suite · Focus & Tasks</title>
-  <!-- Chart.js for statistics -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <link rel="stylesheet" href="style.css">
 </head>
@@ -26,7 +25,7 @@
     <div class="main-grid">
       <!-- Left Column: Timer + Progress -->
       <section class="timer-section">
-        <div class="timer-card glass">
+        <div class="timer-card glass" id="timer-card">
           <div class="session-indicator">
             <span id="session-type-label">Work</span>
             <span id="session-counter">1 / 4</span>
@@ -36,9 +35,7 @@
           <div class="circular-timer">
             <canvas id="timer-canvas" width="300" height="300"></canvas>
             <div class="timer-display">
-              <span id="timer-minutes">25</span>
-              <span>:</span>
-              <span id="timer-seconds">00</span>
+              <span id="timer-minutes">25</span><span>:</span><span id="timer-seconds">00</span>
             </div>
           </div>
 
@@ -49,10 +46,11 @@
             <button id="timer-skip" class="secondary-btn">Skip</button>
           </div>
 
-          <!-- Auto-start toggle (inline) -->
+          <!-- Auto-start toggle -->
           <div class="auto-start-row">
-            <label>
+            <label class="checkbox-label">
               <input type="checkbox" id="auto-start-checkbox"> Auto‑start next
+              <span class="checkmark"></span>
             </label>
           </div>
 
@@ -71,7 +69,7 @@
             </div>
           </div>
 
-          <!-- Quote / Tip (displayed during breaks) -->
+          <!-- Quote / Tip -->
           <div id="quote-container" class="quote-box">
             <p id="quote-text">Stay focused, you're doing great.</p>
           </div>
@@ -86,7 +84,16 @@
             <button id="add-task-btn" class="icon-btn">+ New</button>
           </div>
           <div id="tasks-list" class="tasks-list">
-            <!-- Dynamically populated -->
+            <!-- Active tasks -->
+          </div>
+          <div class="completed-section">
+            <div class="section-header">
+              <h3>✅ Completed</h3>
+              <button id="toggle-completed-btn" class="icon-btn small">▼</button>
+            </div>
+            <div id="completed-tasks-list" class="tasks-list completed-list">
+              <!-- Completed tasks -->
+            </div>
           </div>
           <div class="task-footer">
             <span id="tasks-completed-count">0/0 completed</span>
@@ -103,20 +110,16 @@
           <button class="tab-btn" data-tab="history">History</button>
         </div>
 
-        <!-- Chart container -->
         <div class="chart-container">
           <canvas id="stats-chart"></canvas>
         </div>
 
-        <!-- History log (hidden when chart tabs active) -->
         <div id="history-log-panel" class="history-log" style="display: none;">
           <div class="history-header">
             <h3>Session Log</h3>
             <button id="export-data-btn" class="small-btn">Export CSV</button>
           </div>
-          <div id="history-list" class="history-list">
-            <!-- Dynamically populated -->
-          </div>
+          <div id="history-list" class="history-list"></div>
         </div>
       </section>
     </div>
@@ -130,26 +133,27 @@
         </div>
         <div class="modal-body">
           <div class="setting-group">
-            <label>Work duration (minutes)</label>
-            <input type="number" id="set-work" min="1" max="99" value="25">
+            <label>Work duration <span id="work-value">25</span> min</label>
+            <input type="range" id="set-work" min="1" max="60" value="25" step="1">
           </div>
           <div class="setting-group">
-            <label>Short break (minutes)</label>
-            <input type="number" id="set-short" min="1" max="30" value="5">
+            <label>Short break <span id="short-value">5</span> min</label>
+            <input type="range" id="set-short" min="1" max="30" value="5" step="1">
           </div>
           <div class="setting-group">
-            <label>Long break (minutes)</label>
-            <input type="number" id="set-long" min="1" max="60" value="15">
+            <label>Long break <span id="long-value">15</span> min</label>
+            <input type="range" id="set-long" min="1" max="60" value="15" step="1">
           </div>
           <div class="setting-group">
-            <label>Long break interval (Pomodoros)</label>
-            <input type="number" id="set-interval" min="1" max="10" value="4">
+            <label>Long break interval <span id="interval-value">4</span></label>
+            <input type="range" id="set-interval" min="1" max="10" value="4" step="1">
           </div>
-          <!-- Color picker group: add swatch -->
-          <div class="setting-group">
+          <div class="setting-group color-setting">
             <label>Accent color</label>
-            <input type="color" id="set-accent" value="#ff6a00">
-            <span id="accent-swatch" class="color-swatch"></span>
+            <div class="color-bar-container">
+              <input type="color" id="set-accent" value="#ff6a00">
+              <div class="color-bar" id="color-bar" style="background: #ff6a00;"></div>
+            </div>
           </div>
           <div class="setting-group">
             <label>Notification sound</label>
@@ -161,24 +165,27 @@
             </select>
           </div>
           <div class="setting-group checkbox">
-            <label>
+            <label class="checkbox-label">
               <input type="checkbox" id="set-voice"> Voice announcements
+              <span class="checkmark"></span>
             </label>
           </div>
           <div class="setting-group checkbox">
-            <label>
+            <label class="checkbox-label">
               <input type="checkbox" id="set-desktop-notify"> Desktop notifications
+              <span class="checkmark"></span>
             </label>
           </div>
           <div class="setting-group checkbox">
-            <label>
+            <label class="checkbox-label">
               <input type="checkbox" id="set-fullscreen-break"> Full‑screen break reminder
+              <span class="checkmark"></span>
             </label>
           </div>
-          <!-- Inside settings modal body, after fullscreen break checkbox -->
           <div class="setting-group checkbox">
-            <label>
-              <input type="checkbox" id="set-fullscreen-work"> Full‑screen "Back to work" reminder
+            <label class="checkbox-label">
+              <input type="checkbox" id="set-fullscreen-work"> Full‑screen back to work
+              <span class="checkmark"></span>
             </label>
           </div>
         </div>
@@ -188,7 +195,7 @@
       </div>
     </div>
 
-    <!-- Task Edit Modal (for notes / edit) -->
+    <!-- Task Edit Modal -->
     <div id="task-modal" class="modal">
       <div class="modal-content glass">
         <div class="modal-header">
@@ -202,8 +209,8 @@
             <input type="text" id="edit-task-title" placeholder="Task name">
           </div>
           <div class="setting-group">
-            <label>Estimated Pomodoros</label>
-            <input type="number" id="edit-task-estimate" min="1" value="1">
+            <label>Estimated Pomodoros <span id="edit-estimate-value">1</span></label>
+            <input type="range" id="edit-task-estimate" min="1" max="10" value="1" step="1">
           </div>
           <div class="setting-group">
             <label>Notes</label>
@@ -236,7 +243,7 @@
       </div>
     </div>
 
-    <!-- Full‑screen break overlay -->
+    <!-- Full‑screen Break Overlay -->
     <div id="break-overlay" class="fullscreen-overlay" style="display: none;">
       <div class="overlay-content">
         <h2>☕ Time for a break!</h2>
@@ -244,7 +251,8 @@
         <button id="close-break-overlay" class="primary-btn">I'm back</button>
       </div>
     </div>
-    <!-- Full‑screen work overlay -->
+
+    <!-- Full‑screen Work Overlay -->
     <div id="work-overlay" class="fullscreen-overlay" style="display: none;">
       <div class="overlay-content">
         <h2>💪 Back to Work!</h2>
