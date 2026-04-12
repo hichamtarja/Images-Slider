@@ -8,8 +8,8 @@ const counterSection = document.getElementById('counter-section');
 const startBtn = document.getElementById('start-btn');
 const resetBtn = document.getElementById('reset-btn');
 const titleInput = document.getElementById('title');
-const startInput = document.getElementById('start-datetime');   // Now datetime-local
-const endInput = document.getElementById('end-datetime');       // Now datetime-local
+const startInput = document.getElementById('start-datetime');
+const endInput = document.getElementById('end-datetime');
 const quoteInput = document.getElementById('quote');
 const accentColorInput = document.getElementById('accent-color');
 
@@ -39,16 +39,14 @@ const msStart = document.getElementById('ms-start');
 const msEnd = document.getElementById('ms-end');
 const msSave = document.getElementById('ms-save');
 
-// State
 let countdownInterval = null;
 let milestones = [];
 let showingMilestoneView = false;
-let currentAccentColor = '#ff6a00';  // default
+let currentAccentColor = '#ff6a00';
 
 // ======================== HELPER: Prevent past dates ========================
 function setMinDateTime() {
   const now = new Date();
-  // Format to YYYY-MM-DDTHH:MM (local time)
   const year = now.getFullYear();
   const month = String(now.getMonth() + 1).padStart(2, '0');
   const day = String(now.getDate()).padStart(2, '0');
@@ -61,12 +59,11 @@ function setMinDateTime() {
   if (msStart) msStart.min = minDateTime;
   if (msEnd) msEnd.min = minDateTime;
 }
-setMinDateTime(); // call immediately
-// Also update min when inputs gain focus (in case time passes)
+setMinDateTime();
 startInput.addEventListener('focus', setMinDateTime);
 endInput.addEventListener('focus', setMinDateTime);
 
-// ======================== LOCAL STORAGE MANAGEMENT ========================
+// ======================== LOCAL STORAGE ========================
 function getWidgets() {
   try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; }
   catch { return []; }
@@ -90,7 +87,6 @@ function saveCurrentWidget(partial) {
   saveWidgets(list);
 }
 
-// Serialization helpers for milestones (Date <-> ISO string)
 function serializeMilestones(list) {
   return list.map(ms => ({
     title: ms.title,
@@ -112,22 +108,16 @@ function deserializeMilestones(list) {
 // ======================== COLOR & THEME ========================
 function applyAccentColor(color) {
   currentAccentColor = color;
-  // Set CSS variables for gradient usage
   document.documentElement.style.setProperty('--accent', color);
-  // Generate a slightly lighter/darker secondary color for gradient depth
   const secondary = adjustColor(color, 20);
   document.documentElement.style.setProperty('--accent-secondary', secondary);
   
-  // Update button styles dynamically
   const buttons = document.querySelectorAll('button:not(#reset-btn)');
   buttons.forEach(btn => {
     btn.style.background = `linear-gradient(135deg, ${color}, ${secondary})`;
   });
-  // Also update progress fill gradient (via CSS variables already)
 }
-
 function adjustColor(hex, percent) {
-  // Simple lightness adjustment (quick & dirty)
   let R = parseInt(hex.substring(1,3),16);
   let G = parseInt(hex.substring(3,5),16);
   let B = parseInt(hex.substring(5,7),16);
@@ -136,7 +126,6 @@ function adjustColor(hex, percent) {
   B = Math.min(255, Math.max(0, B + percent));
   return `#${((1 << 24) + (R << 16) + (G << 8) + B).toString(16).slice(1)}`;
 }
-
 function getRandomMilestonePalette() {
   const hue = Math.floor(Math.random() * 360);
   return {
@@ -151,7 +140,6 @@ function animateValue(element, value) {
   setTimeout(() => element.classList.remove('tick'), 300);
   element.textContent = value;
 }
-
 function getTimeParts(totalMilliseconds) {
   const totalSeconds = Math.max(0, Math.floor(totalMilliseconds / 1000));
   return {
@@ -164,23 +152,12 @@ function getTimeParts(totalMilliseconds) {
     seconds: totalSeconds % 60
   };
 }
-
 function escapeHtml(text) {
   return String(text).replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch] || ch));
 }
 
-// Inject runner bounce animation
 function injectRunnerAnimationStyle() {
-  if (document.getElementById('runner-anim-style')) return;
-  const style = document.createElement('style');
-  style.id = 'runner-anim-style';
-  style.textContent = `
-    @keyframes runnerBounce {
-      0% { transform: translateY(0px) rotate(-2deg); }
-      100% { transform: translateY(-6px) rotate(2deg); }
-    }
-  `;
-  document.head.appendChild(style);
+  // No longer needed for bounce, but keep if you want other animations
 }
 
 // ======================== FLAGS & MILESTONE RENDERING ========================
@@ -243,7 +220,7 @@ function createMilestonePin(percent, ms, kind, stackCounts) {
   pin.innerHTML = `
     <div class="pin-line" style="background:${dotColor}"></div>
     <div class="pin-dot" style="background:${dotColor}; box-shadow: 0 0 12px ${dotColor};"></div>
-    <span class="flag-tooltip">${kind==='start'?ms.title+' Start':ms.title+' End'} • ${labelDate}</span>
+    <span class="flag-tooltip">${kind==='start' ? ms.title + ' Start' : ms.title + ' End'}<br>${labelDate}</span>
   `;
   progressContainer.appendChild(pin);
 }
@@ -308,7 +285,7 @@ function toggleMilestoneView() {
   }
 }
 
-// ======================== COUNTDOWN UPDATE (PROGRESS BAR FILLS HERE) ========================
+// ======================== COUNTDOWN UPDATE ========================
 function updateCountdown(start, end) {
   const now = new Date();
   let diff = end - now;
@@ -322,7 +299,6 @@ function updateCountdown(start, end) {
     countdownDisplay.style.opacity = '0.4';
     progressFill.style.width = '100%';
     runner.style.left = '100%';
-    runner.style.animation = 'runnerBounce 0.7s infinite alternate';
     return;
   }
 
@@ -338,11 +314,9 @@ function updateCountdown(start, end) {
   animateValue(minutesSpan, parts.minutes);
   animateValue(secondsSpan, parts.seconds);
 
-  // Danger class if less than 24h
   const danger = diff < 86400000;
   document.querySelectorAll('#countdown div').forEach(d => d.classList.toggle('danger', danger));
 
-  // Progress calculation (elapsed / total)
   const total = end - start;
   const elapsed = now - start;
   let progress = (elapsed / total) * 100;
@@ -351,7 +325,6 @@ function updateCountdown(start, end) {
   progressFill.style.width = progress + '%';
   runner.style.left = progress + '%';
   runner.style.transition = 'left 0.8s cubic-bezier(0.2,0.9,0.4,1)';
-  runner.style.animation = 'runnerBounce 0.7s infinite alternate';
 
   if (showingMilestoneView) updateMilestoneView(now);
 }
@@ -365,7 +338,6 @@ function startCounter() {
   if (isNaN(startDate) || isNaN(endDate)) return alert('Invalid date/time.');
   if (endDate <= startDate) return alert('End must be after start.');
 
-  // Save accent color
   currentAccentColor = accentColorInput.value;
   applyAccentColor(currentAccentColor);
 
@@ -376,7 +348,6 @@ function startCounter() {
   ensureDeadlineMessage().style.display = 'none';
   countdownDisplay.style.display = 'flex';
 
-  // Title & Quote display
   const title = titleInput.value.trim();
   displayTitle.textContent = title || 'Untitled Event';
   displayTitle.dataset.raw = title;
@@ -397,7 +368,6 @@ function startCounter() {
   renderStartEndFlags();
   renderMilestones();
 
-  // Reset runner and progress
   runner.style.left = '0%';
   progressFill.style.width = '0%';
 
@@ -412,7 +382,6 @@ function resetCounter() {
   clearInterval(countdownInterval);
   inputSection.style.display = 'block';
   counterSection.style.display = 'none';
-  // Clear inputs
   titleInput.value = '';
   quoteInput.value = '';
   startInput.value = '';
@@ -426,7 +395,6 @@ function resetCounter() {
   const dm = document.getElementById('deadline-message');
   if (dm) { dm.style.display = 'none'; }
 
-  // Reset countdown spans
   yearsSpan.textContent = monthsSpan.textContent = weeksSpan.textContent = daysSpan.textContent = hoursSpan.textContent = minutesSpan.textContent = secondsSpan.textContent = '0';
   progressFill.style.width = '0%';
   runner.style.left = '0%';
@@ -434,7 +402,6 @@ function resetCounter() {
   saveCurrentState();
 }
 
-// Editable title/quote on click
 function bindEditableTitle() {
   displayTitle.onclick = () => {
     const newTitle = prompt('Edit title:', displayTitle.dataset.raw || '');
@@ -471,7 +438,104 @@ function saveCurrentState() {
   });
 }
 
-// ======================== INITIALIZATION & EVENT LISTENERS ========================
+// ======================== RESTORED: Full Milestone List Modal ========================
+function showMilestoneList() {
+  const overlay = document.createElement('div');
+  Object.assign(overlay.style, {
+    position: 'fixed',
+    inset: '0',
+    background: 'rgba(0,0,0,0.7)',
+    backdropFilter: 'blur(5px)',
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: '9999'
+  });
+
+  const panel = document.createElement('div');
+  Object.assign(panel.style, {
+    background: '#1e1e1e',
+    padding: '25px',
+    borderRadius: '28px',
+    width: '360px',
+    maxHeight: '450px',
+    overflowY: 'auto',
+    position: 'relative',
+    textAlign: 'left',
+    border: '1px solid #444',
+    boxShadow: '0 20px 35px rgba(0,0,0,0.6)'
+  });
+
+  const closeBtn = document.createElement('span');
+  closeBtn.textContent = '✖';
+  Object.assign(closeBtn.style, {
+    position: 'absolute',
+    top: '12px',
+    right: '18px',
+    cursor: 'pointer',
+    fontSize: '20px',
+    opacity: '0.7'
+  });
+  closeBtn.addEventListener('click', () => overlay.remove());
+
+  const title = document.createElement('h3');
+  title.textContent = '📋 All Milestones';
+  title.style.marginTop = '0';
+
+  panel.appendChild(closeBtn);
+  panel.appendChild(title);
+
+  if (milestones.length === 0) {
+    const empty = document.createElement('p');
+    empty.textContent = 'No milestones yet.';
+    empty.style.opacity = '0.7';
+    panel.appendChild(empty);
+  } else {
+    milestones.forEach((ms, index) => {
+      const item = document.createElement('div');
+      Object.assign(item.style, {
+        marginBottom: '12px',
+        padding: '15px 15px 45px',
+        background: '#2a2a2a',
+        borderRadius: '16px',
+        position: 'relative'
+      });
+      item.innerHTML = `
+        <strong style="font-size:16px;">${escapeHtml(ms.title)}</strong><br>
+        <small style="opacity:0.8;">${ms.start.toLocaleString()} → ${ms.end.toLocaleString()}</small><br>
+        <button class="ms-delete-btn" data-del="${index}">Delete</button>
+      `;
+      panel.appendChild(item);
+    });
+
+    panel.querySelectorAll('[data-del]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const index = Number(btn.getAttribute('data-del'));
+        milestones.splice(index, 1);
+        renderMilestones();
+        saveCurrentState();
+        overlay.remove();
+        showMilestoneList(); // Refresh list
+      });
+    });
+  }
+
+  overlay.appendChild(panel);
+  document.body.appendChild(overlay);
+
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay) overlay.remove();
+  });
+}
+
+// ======================== TOOLS VISIBILITY ========================
+function applyToolsVisibility(hidden) {
+  [addMsBtn, viewMsBtn].forEach(btn => { if(btn) btn.style.display = hidden ? 'none' : 'inline-block'; });
+  if (toggleToolsBtn) toggleToolsBtn.textContent = hidden ? "👁️ Show Tools" : "👁️ Hide Tools";
+}
+
+// ======================== INITIALIZATION ========================
 function initFromSavedWidget() {
   const saved = getCurrentWidget();
   if (saved) {
@@ -500,33 +564,27 @@ function initFromSavedWidget() {
   }
 }
 
-function applyToolsVisibility(hidden) {
-  [addMsBtn, viewMsBtn].forEach(btn => { if(btn) btn.style.display = hidden ? 'none' : 'inline-block'; });
-  if (toggleToolsBtn) toggleToolsBtn.textContent = hidden ? "👁️ Show Tools" : "👁️ Hide Tools";
-}
-
-// Color picker event
+// ======================== EVENT LISTENERS ========================
 accentColorInput.addEventListener('input', (e) => {
   applyAccentColor(e.target.value);
   saveCurrentState();
 });
 
-// Start / Reset
 startBtn.addEventListener('click', startCounter);
 resetBtn.addEventListener('click', resetCounter);
+
 toggleToolsBtn.addEventListener('click', () => {
   const hidden = !(localStorage.getItem("date_counter_tools_hidden") === "true");
   localStorage.setItem("date_counter_tools_hidden", hidden);
   applyToolsVisibility(hidden);
 });
-viewMsBtn.addEventListener('click', () => {
-  // Show list of all milestones in a modal (simplified)
-  alert('Milestone list: ' + milestones.map(m => m.title).join(', ') || 'None');
-});
-// Milestone modal logic
+
+viewMsBtn.addEventListener('click', showMilestoneList);  // Restored full modal
+
 addMsBtn.addEventListener('click', () => modal.style.display = 'flex');
 closeModal.addEventListener('click', () => modal.style.display = 'none');
 window.addEventListener('click', (e) => { if (e.target === modal) modal.style.display = 'none'; });
+
 msSave.addEventListener('click', () => {
   const title = msTitle.value.trim();
   const start = new Date(msStart.value);
@@ -545,6 +603,6 @@ msSave.addEventListener('click', () => {
 
 countdownDisplay.addEventListener('click', toggleMilestoneView);
 
-// Start!
+// Start the app
 injectRunnerAnimationStyle();
 initFromSavedWidget();
