@@ -682,3 +682,10 @@ body.light-mode .fullscreen-overlay {
 .pomodoro-dot.half {
   background: linear-gradient(90deg, var(--accent) 50%, #444 50%);
 }
+
+#extra-time-container {
+  background: rgba(255,255,255,0.05);
+  padding: 6px 12px;
+  border-radius: 20px;
+  display: inline-block;
+}
