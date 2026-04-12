@@ -20,7 +20,7 @@
 // 0. GLOBALS & CONFIGURATION
 // =============================================
 
-// Widgets data – you can add/modify here
+// Widgets data – add new widgets here
 const widgetsData = [
   {
     id: 'image_slider',
@@ -57,6 +57,15 @@ const widgetsData = [
     url: 'pomodoro/index.html',
     category: 'productivity',
     thumbnail: 'pomodoro/preview.png'
+  },
+  {
+    id: 'productivity_toolkit',
+    name: 'Productivity Toolkit',
+    description: 'Bookmarks, Password Gen, Link Checker, QR',
+    icon: '🧰',
+    url: 'productivity_toolkit/index.html',
+    category: 'tools',
+    thumbnail: 'productivity_toolkit/preview.png'
   }
 ];
 
@@ -65,7 +74,8 @@ const categories = [
   { id: 'all', label: 'All' },
   { id: 'productivity', label: 'Productivity' },
   { id: 'media', label: 'Media' },
-  { id: 'time', label: 'Time' }
+  { id: 'time', label: 'Time' },
+  { id: 'tools', label: 'Tools' }
 ];
 
 // Default card order (fallback)
@@ -696,7 +706,11 @@ function importLayout(file) {
         localStorage.setItem(STORAGE_KEYS.SOUND_ENABLED, soundEnabled);
         updateSoundIcon();
       }
+      // Re-render with imported settings
       renderCards();
+      // Re-initialize sortable after DOM update
+      if (sortableInstance) sortableInstance.destroy();
+      initSortable();
     } catch (err) {
       alert('Invalid layout file.');
     }
@@ -712,6 +726,7 @@ importFileInput.addEventListener('change', (e) => {
 resetBtn.addEventListener('click', () => {
   playSound('menu');
   if (confirm('Reset all layout and preferences to default?')) {
+    // Clear all stored data
     Object.values(STORAGE_KEYS).forEach(key => localStorage.removeItem(key));
     location.reload();
   }
@@ -759,7 +774,6 @@ function attachGlobalSoundListeners() {
   document.querySelectorAll(clickableSelectors).forEach(el => {
     el.addEventListener('click', () => playSound('click'));
   });
-  // Also for dropdown items and export/import/reset (already handled, but for completeness)
   document.querySelectorAll('.dropdown-item').forEach(el => {
     el.addEventListener('click', () => playSound('menu'));
   });
