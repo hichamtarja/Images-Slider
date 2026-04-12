@@ -55,17 +55,15 @@ body.fade-out {
 }
 
 /* =============================================
-   CONTROLS BAR
+   TOP BAR (Greeting left, controls right)
    ============================================= */
-.controls {
-  position: fixed;
-  top: 20px;
-  right: 20px;
+.top-bar {
   display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 20px 0;
+  position: relative;
   z-index: 100;
-  max-width: calc(100% - 40px);
 }
 
 .greeting-clock {
@@ -74,13 +72,16 @@ body.fade-out {
   -webkit-backdrop-filter: blur(8px);
   border: 1px solid var(--card-border);
   border-radius: 40px;
-  padding: 10px 18px;
+  padding: 10px 20px;
   color: var(--text-color);
   font-weight: 500;
   box-shadow: 0 4px 8px var(--shadow-color);
-  display: flex;
-  align-items: center;
   white-space: nowrap;
+}
+
+.top-actions {
+  display: flex;
+  gap: 12px;
 }
 
 .control-btn {
@@ -105,58 +106,121 @@ body.fade-out {
   transform: scale(1.02);
 }
 
-.accent-picker {
+/* Dropdown Menu */
+.menu-dropdown {
+  position: relative;
+  display: inline-block;
+}
+
+.menu-toggle {
+  padding: 10px 16px;
+  font-size: 1.4rem;
+  line-height: 1;
+}
+
+.dropdown-content {
+  display: none;
+  position: absolute;
+  right: 0;
+  top: 100%;
+  margin-top: 8px;
+  background: var(--card-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--card-border);
+  border-radius: 16px;
+  min-width: 200px;
+  box-shadow: 0 8px 24px var(--shadow-color);
+  z-index: 200;
+  overflow: hidden;
+}
+
+.dropdown-content.show {
+  display: block;
+}
+
+.dropdown-item {
+  width: 100%;
+  padding: 12px 16px;
+  background: transparent;
+  border: none;
+  color: var(--text-color);
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.1s;
+  font-size: 0.95rem;
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+.dropdown-item:hover {
+  background: var(--context-hover);
+}
+
+.dropdown-divider {
+  height: 1px;
+  background: var(--card-border);
+  margin: 4px 0;
+}
+
+/* =============================================
+   FILTERS SECTION (Accent + Category + Sort)
+   ============================================= */
+.filters-section {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 16px 24px;
+  margin: 20px 20px 0;
+  padding: 12px 20px;
   background: var(--card-bg);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   border: 1px solid var(--card-border);
-  border-radius: 40px;
-  padding: 6px 14px;
+  border-radius: 60px;
   box-shadow: 0 4px 8px var(--shadow-color);
 }
 
+.accent-picker {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .accent-picker label {
-  font-size: 0.9rem;
   font-weight: 500;
   color: var(--text-color);
 }
 
 #accentColor {
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
   padding: 0;
-  border: 1px solid var(--card-border);
+  border: 2px solid var(--card-border);
   border-radius: 50%;
   cursor: pointer;
   background: transparent;
 }
 
-.layout-controls {
-  display: flex;
-  gap: 8px;
+#accentColor::-webkit-color-swatch-wrapper {
+  padding: 0;
 }
 
-/* =============================================
-   CATEGORY FILTER & SORT OPTIONS
-   ============================================= */
-.category-filter, .sort-options {
+#accentColor::-webkit-color-swatch {
+  border: none;
+  border-radius: 50%;
+}
+
+.category-filter {
   display: flex;
   align-items: center;
-  justify-content: center;
   gap: 12px;
-  margin: 20px auto 10px;
-  flex-wrap: wrap;
-  position: relative;
-  z-index: 10;
 }
 
-.filter-label, .sort-options span {
+.filter-label {
   font-weight: 500;
-  color: var(--text-color);
-  opacity: 0.9;
 }
 
 .filter-chips {
@@ -166,8 +230,7 @@ body.fade-out {
 }
 
 .chip {
-  background: var(--card-bg);
-  backdrop-filter: blur(4px);
+  background: transparent;
   border: 1px solid var(--card-border);
   border-radius: 20px;
   padding: 6px 14px;
@@ -187,9 +250,14 @@ body.fade-out {
   background: var(--card-hover-bg);
 }
 
+.sort-options {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .sort-btn {
-  background: var(--card-bg);
-  backdrop-filter: blur(4px);
+  background: transparent;
   border: 1px solid var(--card-border);
   border-radius: 20px;
   padding: 6px 14px;
@@ -211,17 +279,17 @@ body.fade-out {
 .container {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 1rem 1.5rem 3rem;
+  padding: 1.5rem 1.5rem 3rem;
   text-align: center;
   position: relative;
   z-index: 2;
 }
 
 h1 {
-  font-size: clamp(2.5rem, 8vw, 4rem);
+  font-size: clamp(1.8rem, 5vw, 2.5rem);
   font-weight: 700;
   letter-spacing: -0.02em;
-  margin: 1rem 0 2rem;
+  margin: 0.5rem 0 2rem;
   text-shadow: 0 4px 12px var(--shadow-color);
   animation: fadeInDown 0.6s ease-out;
 }
@@ -232,7 +300,7 @@ h1 {
 }
 
 /* =============================================
-   CARD GRID
+   CARD GRID (unchanged)
    ============================================= */
 .cards {
   display: flex;
@@ -242,9 +310,7 @@ h1 {
   gap: 1.8rem;
 }
 
-/* =============================================
-   INDIVIDUAL CARD
-   ============================================= */
+/* Card styles (same as before, with thumbnail etc.) */
 .card {
   position: relative;
   background: var(--card-bg);
@@ -263,16 +329,12 @@ h1 {
   flex-direction: column;
 }
 
-.card:active {
-  cursor: grabbing;
-}
-
+.card:active { cursor: grabbing; }
 .card:focus-visible {
   outline: 3px solid var(--accent-color);
   outline-offset: 4px;
   box-shadow: 0 0 0 4px var(--accent-glow);
 }
-
 .card:hover {
   transform: translateY(-8px) scale(1.02);
   background: var(--card-hover-bg);
@@ -280,18 +342,9 @@ h1 {
   box-shadow: 0 20px 30px -10px var(--shadow-color);
 }
 
-.sortable-ghost {
-  opacity: 0.4;
-  background: var(--accent-color);
-  border: 2px dashed var(--accent-color);
-}
+.sortable-ghost { opacity: 0.4; background: var(--accent-color); border: 2px dashed var(--accent-color); }
+.sortable-drag { box-shadow: 0 20px 30px -10px var(--shadow-color); transform: rotate(2deg); }
 
-.sortable-drag {
-  box-shadow: 0 20px 30px -10px var(--shadow-color);
-  transform: rotate(2deg);
-}
-
-/* Card thumbnail image */
 .card-thumbnail {
   width: 100%;
   height: 120px;
@@ -299,35 +352,26 @@ h1 {
   margin-bottom: 1rem;
   background-size: cover;
   background-position: center;
-  background-repeat: no-repeat;
   background-color: rgba(0,0,0,0.1);
   border: 1px solid var(--card-border);
 }
-
-/* Icon (fallback if no thumbnail) */
 .icon {
   font-size: 3.5rem;
   line-height: 1.2;
   margin-bottom: 0.5rem;
   filter: drop-shadow(0 4px 6px var(--shadow-color));
 }
-
 .card h2 {
   font-size: 1.6rem;
   font-weight: 600;
   margin: 0.5rem 0 0.25rem;
-  letter-spacing: -0.01em;
 }
-
 .card p {
   font-size: 0.95rem;
   opacity: 0.8;
   margin: 0 0 0.75rem;
-  line-height: 1.5;
   flex-grow: 1;
 }
-
-/* Note display */
 .card-note {
   font-size: 0.85rem;
   font-style: italic;
@@ -337,8 +381,6 @@ h1 {
   border-top: 1px dashed var(--card-border);
   word-break: break-word;
 }
-
-/* Status badge */
 .status-badge {
   position: absolute;
   top: 16px;
@@ -349,20 +391,12 @@ h1 {
   background-color: var(--status-unknown);
   border: 2px solid var(--card-bg);
   box-shadow: 0 0 0 1px var(--card-border);
-  transition: background-color 0.2s;
   cursor: help;
   z-index: 3;
 }
+.status-badge[data-status="available"] { background-color: var(--status-available); }
+.status-badge[data-status="unavailable"] { background-color: var(--status-unavailable); }
 
-.status-badge[data-status="available"] {
-  background-color: var(--status-available);
-}
-
-.status-badge[data-status="unavailable"] {
-  background-color: var(--status-unavailable);
-}
-
-/* Usage heatmap sparkline container */
 .sparkline {
   display: flex;
   align-items: flex-end;
@@ -370,17 +404,13 @@ h1 {
   height: 24px;
   margin: 10px 0 5px;
 }
-
 .sparkline-bar {
   flex: 1;
   background-color: var(--accent-color);
   opacity: 0.6;
   border-radius: 2px;
   min-height: 2px;
-  transition: height 0.2s;
 }
-
-/* Last opened timestamp */
 .last-opened {
   font-size: 0.75rem;
   opacity: 0.6;
@@ -388,9 +418,7 @@ h1 {
   text-align: right;
 }
 
-/* =============================================
-   RIPPLE EFFECT
-   ============================================= */
+/* Ripple */
 .ripple {
   position: absolute;
   border-radius: 50%;
@@ -399,13 +427,10 @@ h1 {
   animation: ripple-animation 0.6s ease-out forwards;
   pointer-events: none;
 }
-
-@keyframes ripple-animation {
-  to { transform: scale(4); opacity: 0; }
-}
+@keyframes ripple-animation { to { transform: scale(4); opacity: 0; } }
 
 /* =============================================
-   FLOATING EMOJIS (with hover + parallax)
+   FLOATING EMOJIS (smaller size, more variety)
    ============================================= */
 .floating {
   position: fixed;
@@ -417,34 +442,30 @@ h1 {
   z-index: 1;
   overflow: hidden;
 }
-
 .floating span {
   position: absolute;
-  font-size: 2rem;
+  font-size: 1.6rem;  /* reduced from 2rem */
   opacity: 0.55;
   text-shadow: 0 0 12px var(--shadow-color);
   will-change: transform;
   transition: transform 0.2s ease, opacity 0.2s, filter 0.2s;
-  pointer-events: auto;  /* Allow hover */
+  pointer-events: auto;
   cursor: default;
   animation: float 8s infinite ease-in-out;
 }
-
-/* Hover effect on emojis */
 .floating span:hover {
   opacity: 1 !important;
   transform: scale(1.5) !important;
   filter: drop-shadow(0 0 8px var(--accent-color));
   z-index: 10;
 }
-
 @keyframes float {
   0%, 100% { transform: translateY(0) rotate(0deg); }
   50% { transform: translateY(-24px) rotate(2deg); }
 }
 
 /* =============================================
-   CONTEXT MENU
+   CONTEXT MENU & MODAL (unchanged)
    ============================================= */
 .context-menu {
   position: fixed;
@@ -459,38 +480,22 @@ h1 {
   display: none;
   color: var(--text-color);
 }
-
 .context-item {
   padding: 8px 16px;
   cursor: pointer;
   transition: background 0.1s;
 }
+.context-item:hover { background: var(--context-hover); }
+.context-divider { height: 1px; background: var(--card-border); margin: 6px 0; }
 
-.context-item:hover {
-  background: var(--context-hover);
-}
-
-.context-divider {
-  height: 1px;
-  background: var(--card-border);
-  margin: 6px 0;
-}
-
-/* =============================================
-   MODAL
-   ============================================= */
 .modal {
   display: none;
   position: fixed;
   z-index: 1001;
-  left: 0;
-  top: 0;
-  width: 100%;
-  height: 100%;
+  left: 0; top: 0; width: 100%; height: 100%;
   background-color: rgba(0,0,0,0.5);
   backdrop-filter: blur(4px);
 }
-
 .modal-content {
   background: var(--modal-bg);
   margin: 15% auto;
@@ -501,48 +506,39 @@ h1 {
   color: var(--text-color);
   border: 1px solid var(--card-border);
 }
-
-.close {
-  float: right;
-  font-size: 28px;
-  font-weight: bold;
-  cursor: pointer;
-}
-
+.close { float: right; font-size: 28px; font-weight: bold; cursor: pointer; }
 .modal textarea {
-  width: 100%;
-  padding: 12px;
-  border-radius: 12px;
+  width: 100%; padding: 12px; border-radius: 12px;
   border: 1px solid var(--card-border);
-  background: var(--card-bg);
-  color: var(--text-color);
-  font-family: inherit;
-  margin: 12px 0;
+  background: var(--card-bg); color: var(--text-color);
+  font-family: inherit; margin: 12px 0;
 }
-
 #saveNoteBtn {
-  background: var(--accent-color);
-  color: white;
-  border: none;
-  padding: 10px 20px;
-  border-radius: 20px;
-  cursor: pointer;
+  background: var(--accent-color); color: white;
+  border: none; padding: 10px 20px; border-radius: 20px; cursor: pointer;
 }
 
 /* =============================================
    RESPONSIVE
    ============================================= */
-@media (max-width: 640px) {
-  .container { padding: 1rem 0.5rem 2rem; }
-  .card { width: 100%; max-width: 320px; }
-  .controls { top: 10px; right: 10px; }
-  .floating span { font-size: 1.6rem; }
-  .greeting-clock { font-size: 0.9rem; padding: 8px 12px; }
+@media (max-width: 700px) {
+  .top-bar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+  .greeting-clock { text-align: center; }
+  .filters-section {
+    flex-direction: column;
+    align-items: stretch;
+    border-radius: 30px;
+  }
+  .category-filter, .sort-options {
+    justify-content: center;
+  }
+  .floating span { font-size: 1.3rem; }
 }
 
-/* =============================================
-   PREFERS REDUCED MOTION
-   ============================================= */
 @media (prefers-reduced-motion: reduce) {
   body, .card, .floating span, .ripple, h1 {
     animation-duration: 0.01ms !important;
