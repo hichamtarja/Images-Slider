@@ -307,6 +307,24 @@
     </div>
   </div>
 
+  <!-- Partial Task Modal -->
+  <div id="partial-task-modal" class="modal">
+    <div class="modal-content glass">
+      <div class="modal-header">
+        <h2>Apply to Task?</h2>
+        <button class="close-modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p>Do you want to count this partial session toward the active task?</p>
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+          <button id="partial-half-btn" class="secondary-btn">Count as half Pomodoro (½)</button>
+          <button id="partial-full-btn" class="secondary-btn">Count as full Pomodoro</button>
+          <button id="partial-none-btn" class="secondary-btn">Do not apply</button>
+        </div>
+      </div>
+    </div>
+  
+  </div>
   <script src="script.js"></script>
 </body>
 </html>
