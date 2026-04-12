@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Productivity Toolkit · Bookmarks & Security</title>
+  <!-- SortableJS for drag-and-drop reordering -->
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+  <!-- QR Code library -->
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app-container">
+    <header>
+      <h1>🧰 Productivity Toolkit</h1>
+      <p class="subtitle">Bookmarks · Passwords · Link Checker · QR Codes</p>
+    </header>
+
+    <!-- Top row: Bookmark Manager (main) + Password Generator -->
+    <div class="row">
+      <!-- Bookmark Manager Panel -->
+      <section class="panel panel-large" id="bookmark-panel">
+        <div class="panel-header">
+          <h2>📚 Bookmark Manager</h2>
+          <div class="panel-actions">
+            <button id="exportBookmarksBtn" class="icon-btn" title="Export Bookmarks">📤</button>
+            <button id="importBookmarksBtn" class="icon-btn" title="Import Bookmarks">📥</button>
+            <input type="file" id="importBookmarksFile" accept=".json" style="display:none">
+          </div>
+        </div>
+
+        <!-- Category Management -->
+        <div class="category-section">
+          <div class="category-list" id="categoryList"></div>
+          <div class="add-category">
+            <input type="text" id="newCategoryInput" placeholder="New category name" maxlength="20">
+            <button id="addCategoryBtn" class="btn btn-small">+ Add</button>
+          </div>
+        </div>
+
+        <!-- Search & Add Bookmark -->
+        <div class="bookmark-controls">
+          <input type="text" id="bookmarkSearch" placeholder="🔍 Search bookmarks..." class="search-input">
+          <button id="showAddBookmarkBtn" class="btn btn-primary">+ Add Bookmark</button>
+        </div>
+
+        <!-- Add/Edit Bookmark Form (hidden by default) -->
+        <div id="bookmarkFormContainer" class="form-container hidden">
+          <h3 id="formTitle">Add Bookmark</h3>
+          <form id="bookmarkForm">
+            <input type="hidden" id="bookmarkId">
+            <div class="form-group">
+              <label for="bookmarkTitle">Title</label>
+              <input type="text" id="bookmarkTitle" required>
+            </div>
+            <div class="form-group">
+              <label for="bookmarkUrl">URL</label>
+              <input type="url" id="bookmarkUrl" required placeholder="https://...">
+            </div>
+            <div class="form-group">
+              <label for="bookmarkCategory">Category</label>
+              <select id="bookmarkCategory" required></select>
+            </div>
+            <div class="form-actions">
+              <button type="submit" class="btn btn-primary">Save</button>
+              <button type="button" id="cancelBookmarkBtn" class="btn btn-outline">Cancel</button>
+            </div>
+          </form>
+        </div>
+
+        <!-- Bookmarks Grid -->
+        <div id="bookmarksContainer" class="bookmarks-grid"></div>
+        <div id="noBookmarksMsg" class="empty-message">No bookmarks yet. Add one to get started!</div>
+      </section>
+
+      <!-- Password Generator Panel -->
+      <section class="panel panel-small" id="password-panel">
+        <div class="panel-header">
+          <h2>🔐 Password Generator</h2>
+        </div>
+        <div class="password-display">
+          <input type="text" id="generatedPassword" readonly placeholder="Your password">
+          <button id="copyPasswordBtn" class="icon-btn" title="Copy to clipboard">📋</button>
+        </div>
+        <div class="strength-meter">
+          <div class="strength-bar" id="strengthBar"></div>
+          <span id="strengthText">Weak</span>
+        </div>
+        <div class="options">
+          <div class="option">
+            <label for="passwordLength">Length: <span id="lengthValue">16</span></label>
+            <input type="range" id="passwordLength" min="8" max="32" value="16">
+          </div>
+          <div class="option-check">
+            <input type="checkbox" id="includeUppercase" checked> Uppercase
+          </div>
+          <div class="option-check">
+            <input type="checkbox" id="includeLowercase" checked> Lowercase
+          </div>
+          <div class="option-check">
+            <input type="checkbox" id="includeNumbers" checked> Numbers
+          </div>
+          <div class="option-check">
+            <input type="checkbox" id="includeSymbols"> Symbols
+          </div>
+        </div>
+        <button id="generatePasswordBtn" class="btn btn-primary btn-full">Generate Password</button>
+
+        <!-- Optional History -->
+        <div class="history-section">
+          <label class="history-toggle">
+            <input type="checkbox" id="enableHistory"> Keep history (this session only)
+          </label>
+          <div id="passwordHistoryList" class="history-list hidden"></div>
+          <button id="clearHistoryBtn" class="btn btn-outline btn-small hidden">Clear History</button>
+        </div>
+      </section>
+    </div>
+
+    <!-- Bottom row: Link Checker + QR Code Generator -->
+    <div class="row">
+      <!-- Link Checker Panel -->
+      <section class="panel panel-half">
+        <div class="panel-header">
+          <h2>🔗 Link Checker</h2>
+        </div>
+        <div class="link-checker">
+          <div class="input-group">
+            <input type="url" id="linkUrlInput" placeholder="Enter URL to check..." value="https://">
+            <button id="checkLinkBtn" class="btn btn-primary">Check</button>
+          </div>
+          <div id="linkResult" class="link-result">
+            <span class="status-indicator"></span>
+            <span class="status-text">Enter a URL above</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- QR Code Generator Panel -->
+      <section class="panel panel-half">
+        <div class="panel-header">
+          <h2>📱 QR Code Generator</h2>
+        </div>
+        <div class="qr-generator">
+          <div class="input-group">
+            <input type="url" id="qrUrlInput" placeholder="Enter URL or text..." value="https://">
+            <button id="generateQrBtn" class="btn btn-primary">Generate</button>
+          </div>
+          <div class="qr-result">
+            <canvas id="qrCanvas"></canvas>
+            <div id="qrPlaceholder" class="qr-placeholder">Your QR code will appear here</div>
+            <button id="downloadQrBtn" class="btn btn-outline" disabled>⬇ Download PNG</button>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
