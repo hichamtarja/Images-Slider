@@ -598,3 +598,87 @@ input:focus, select:focus, textarea:focus {
 .hidden {
   display: none !important;
 }
+
+/* =============================================
+   NEW LAYOUT: PANEL STACK (RIGHT COLUMN)
+   ============================================= */
+.panel-stack {
+  flex: 1;
+  min-width: 300px;
+  display: flex;
+  flex-direction: column;
+  gap: 1.8rem;
+}
+
+.panel-stack .panel {
+  width: 100%;
+}
+
+/* =============================================
+   ENCRYPTION TOOL TABS & PANELS
+   ============================================= */
+.tab-buttons {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.tab-btn {
+  flex: 1;
+  padding: 0.6rem;
+  background: transparent;
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all 0.2s;
+  font-weight: 500;
+}
+
+.tab-btn.active {
+  background: var(--accent-primary);
+  color: #0b0f15;
+  border-color: var(--accent-primary);
+}
+
+.encrypt-panel {
+  display: block;
+}
+
+.encrypt-panel.hidden {
+  display: none;
+}
+
+.encryption-tool textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+/* =============================================
+   INPUT GROUP WITH RESET BUTTONS
+   ============================================= */
+.input-group {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.input-group .btn-outline {
+  padding: 0.6rem 1rem;
+  flex-shrink: 0;
+}
+
+/* =============================================
+   SCANNER MODES WRAP IMPROVEMENT
+   ============================================= */
+.scanner-modes {
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+/* =============================================
+   ENSURE HIDDEN CLASS WORKS EVERYWHERE
+   ============================================= */
+.hidden {
+  display: none !important;
+}
