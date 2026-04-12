@@ -1,434 +1,537 @@
-/**
- * Productivity Toolkit – Fully Fixed Link Checker & QR Generator
- */
-
-// =============================================
-// STATE & DOM ELEMENTS (unchanged)
-// =============================================
-let bookmarks = [];
-let categories = ['General', 'Work', 'Personal'];
-let currentCategory = 'General';
-let editingBookmarkId = null;
-let passwordHistory = [];
-let historyEnabled = false;
-
-// Bookmark elements
-const categoryList = document.getElementById('categoryList');
-const bookmarksContainer = document.getElementById('bookmarksContainer');
-const noBookmarksMsg = document.getElementById('noBookmarksMsg');
-const bookmarkForm = document.getElementById('bookmarkForm');
-const formContainer = document.getElementById('bookmarkFormContainer');
-const formTitle = document.getElementById('formTitle');
-const bookmarkIdInput = document.getElementById('bookmarkId');
-const bookmarkTitleInput = document.getElementById('bookmarkTitle');
-const bookmarkUrlInput = document.getElementById('bookmarkUrl');
-const bookmarkCategorySelect = document.getElementById('bookmarkCategory');
-const cancelBookmarkBtn = document.getElementById('cancelBookmarkBtn');
-const showAddBookmarkBtn = document.getElementById('showAddBookmarkBtn');
-const bookmarkSearch = document.getElementById('bookmarkSearch');
-const newCategoryInput = document.getElementById('newCategoryInput');
-const addCategoryBtn = document.getElementById('addCategoryBtn');
-
-// Password elements
-const generatedPassword = document.getElementById('generatedPassword');
-const copyPasswordBtn = document.getElementById('copyPasswordBtn');
-const passwordLength = document.getElementById('passwordLength');
-const lengthValue = document.getElementById('lengthValue');
-const includeUppercase = document.getElementById('includeUppercase');
-const includeLowercase = document.getElementById('includeLowercase');
-const includeNumbers = document.getElementById('includeNumbers');
-const includeSymbols = document.getElementById('includeSymbols');
-const generatePasswordBtn = document.getElementById('generatePasswordBtn');
-const strengthBar = document.getElementById('strengthBar');
-const strengthText = document.getElementById('strengthText');
-const enableHistory = document.getElementById('enableHistory');
-const passwordHistoryList = document.getElementById('passwordHistoryList');
-const clearHistoryBtn = document.getElementById('clearHistoryBtn');
-
-// Link Checker
-const linkUrlInput = document.getElementById('linkUrlInput');
-const checkLinkBtn = document.getElementById('checkLinkBtn');
-const linkResult = document.getElementById('linkResult');
-const statusIndicator = linkResult.querySelector('.status-indicator');
-const statusText = linkResult.querySelector('.status-text');
-
-// QR Code
-const qrUrlInput = document.getElementById('qrUrlInput');
-const generateQrBtn = document.getElementById('generateQrBtn');
-const qrCanvas = document.getElementById('qrCanvas');
-const qrPlaceholder = document.getElementById('qrPlaceholder');
-const downloadQrBtn = document.getElementById('downloadQrBtn');
-
-// Import/Export
-const exportBookmarksBtn = document.getElementById('exportBookmarksBtn');
-const importBookmarksBtn = document.getElementById('importBookmarksBtn');
-const importBookmarksFile = document.getElementById('importBookmarksFile');
-
-// =============================================
-// STORAGE & CATEGORIES (unchanged)
-// =============================================
-function loadFromStorage() {
-  const storedBookmarks = localStorage.getItem('toolkit_bookmarks');
-  if (storedBookmarks) bookmarks = JSON.parse(storedBookmarks);
-  const storedCategories = localStorage.getItem('toolkit_categories');
-  if (storedCategories) categories = JSON.parse(storedCategories);
-  else categories = ['General', 'Work', 'Personal'];
-  if (!categories.includes('General')) categories.unshift('General');
+/* =============================================
+   PRODUCTIVITY TOOLKIT THEME (Dark Tech)
+   ============================================= */
+:root {
+  --bg-primary: #0b0f15;
+  --bg-secondary: #151b23;
+  --bg-card: #1e262f;
+  --border-color: #2a3642;
+  --text-primary: #e6edf3;
+  --text-secondary: #8b9aad;
+  --accent-primary: #00d4ff;
+  --accent-secondary: #7b61ff;
+  --success: #10b981;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+  --shadow: 0 8px 20px rgba(0,0,0,0.5);
+  --glow: 0 0 12px rgba(0,212,255,0.3);
 }
-function saveToStorage() {
-  localStorage.setItem('toolkit_bookmarks', JSON.stringify(bookmarks));
-  localStorage.setItem('toolkit_categories', JSON.stringify(categories));
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
 }
-loadFromStorage();
 
-function renderCategories() {
-  categoryList.innerHTML = '';
-  categories.forEach(cat => {
-    const chip = document.createElement('span');
-    chip.className = `category-chip ${cat === currentCategory ? 'active' : ''}`;
-    chip.innerHTML = `${cat} ${cat !== 'General' ? '<span class="delete-cat" data-cat="'+cat+'">✕</span>' : ''}`;
-    chip.addEventListener('click', (e) => {
-      if (e.target.classList.contains('delete-cat')) {
-        e.stopPropagation();
-        deleteCategory(cat);
-      } else {
-        currentCategory = cat;
-        renderCategories();
-        renderBookmarks();
-      }
-    });
-    categoryList.appendChild(chip);
-  });
-  bookmarkCategorySelect.innerHTML = '';
-  categories.forEach(cat => {
-    const option = document.createElement('option');
-    option.value = cat;
-    option.textContent = cat;
-    bookmarkCategorySelect.appendChild(option);
-  });
+body {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  line-height: 1.5;
+  min-height: 100vh;
+  padding: 2rem 1.5rem;
 }
-function deleteCategory(cat) {
-  if (cat === 'General') return;
-  bookmarks.forEach(b => { if (b.category === cat) b.category = 'General'; });
-  categories = categories.filter(c => c !== cat);
-  if (currentCategory === cat) currentCategory = 'General';
-  saveToStorage();
-  renderCategories();
-  renderBookmarks();
+
+.app-container {
+  max-width: 1600px;
+  margin: 0 auto;
 }
-addCategoryBtn.addEventListener('click', () => {
-  const newCat = newCategoryInput.value.trim();
-  if (newCat && !categories.includes(newCat)) {
-    categories.push(newCat);
-    saveToStorage();
-    renderCategories();
-    newCategoryInput.value = '';
-  }
-});
 
-// =============================================
-// BOOKMARK RENDERING (unchanged)
-// =============================================
-function renderBookmarks() {
-  const searchTerm = bookmarkSearch.value.toLowerCase();
-  let filtered = bookmarks.filter(b => b.category === currentCategory);
-  if (searchTerm) {
-    filtered = filtered.filter(b => b.title.toLowerCase().includes(searchTerm) || b.url.toLowerCase().includes(searchTerm));
-  }
-  if (filtered.length === 0) {
-    bookmarksContainer.innerHTML = '';
-    noBookmarksMsg.classList.remove('hidden');
-    return;
-  }
-  noBookmarksMsg.classList.add('hidden');
-  bookmarksContainer.innerHTML = filtered.map(bookmark => {
-    const faviconUrl = `https://www.google.com/s2/favicons?domain=${encodeURIComponent(bookmark.url)}&sz=32`;
-    return `
-      <div class="bookmark-card" data-id="${bookmark.id}" data-url="${bookmark.url}">
-        <img src="${faviconUrl}" class="bookmark-favicon" alt="" onerror="this.style.display='none'">
-        <div class="bookmark-title">${escapeHtml(bookmark.title)}</div>
-        <div class="bookmark-url">${escapeHtml(new URL(bookmark.url).hostname)}</div>
-        <div class="bookmark-actions">
-          <button class="edit-bookmark" data-id="${bookmark.id}">✏️</button>
-          <button class="delete-bookmark" data-id="${bookmark.id}">🗑️</button>
-        </div>
-      </div>
-    `;
-  }).join('');
-  document.querySelectorAll('.bookmark-card').forEach(card => {
-    card.addEventListener('click', (e) => {
-      if (e.target.closest('button')) return;
-      window.open(card.dataset.url, '_blank');
-    });
-  });
-  document.querySelectorAll('.edit-bookmark').forEach(btn => btn.addEventListener('click', (e) => {
-    e.stopPropagation();
-    editBookmark(btn.dataset.id);
-  }));
-  document.querySelectorAll('.delete-bookmark').forEach(btn => btn.addEventListener('click', (e) => {
-    e.stopPropagation();
-    deleteBookmark(btn.dataset.id);
-  }));
+/* =============================================
+   HEADER
+   ============================================= */
+header {
+  text-align: center;
+  margin-bottom: 2.5rem;
 }
-function escapeHtml(text) {
-  const div = document.createElement('div');
-  div.textContent = text;
-  return div.innerHTML;
+
+h1 {
+  font-size: 2.8rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  letter-spacing: -0.02em;
+  margin-bottom: 0.5rem;
 }
-function editBookmark(id) {
-  const bookmark = bookmarks.find(b => b.id === id);
-  if (!bookmark) return;
-  editingBookmarkId = id;
-  bookmarkIdInput.value = id;
-  bookmarkTitleInput.value = bookmark.title;
-  bookmarkUrlInput.value = bookmark.url;
-  bookmarkCategorySelect.value = bookmark.category;
-  formTitle.textContent = 'Edit Bookmark';
-  formContainer.classList.remove('hidden');
+
+.subtitle {
+  color: var(--text-secondary);
+  font-size: 1.1rem;
 }
-function deleteBookmark(id) {
-  bookmarks = bookmarks.filter(b => b.id !== id);
-  saveToStorage();
-  renderBookmarks();
+
+/* =============================================
+   LAYOUT
+   ============================================= */
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.8rem;
+  margin-bottom: 1.8rem;
 }
-bookmarkForm.addEventListener('submit', (e) => {
-  e.preventDefault();
-  const title = bookmarkTitleInput.value.trim();
-  let url = bookmarkUrlInput.value.trim();
-  const category = bookmarkCategorySelect.value;
-  if (!title || !url) return;
-  if (!url.startsWith('http://') && !url.startsWith('https://')) url = 'https://' + url;
-  if (editingBookmarkId) {
-    const index = bookmarks.findIndex(b => b.id === editingBookmarkId);
-    if (index !== -1) bookmarks[index] = { ...bookmarks[index], title, url, category };
-    editingBookmarkId = null;
-  } else {
-    bookmarks.push({ id: Date.now() + '-' + Math.random().toString(36).substr(2,5), title, url, category });
-  }
-  saveToStorage();
-  formContainer.classList.add('hidden');
-  bookmarkForm.reset();
-  renderCategories();
-  renderBookmarks();
-});
-cancelBookmarkBtn.addEventListener('click', () => {
-  formContainer.classList.add('hidden');
-  bookmarkForm.reset();
-  editingBookmarkId = null;
-});
-showAddBookmarkBtn.addEventListener('click', () => {
-  editingBookmarkId = null;
-  formTitle.textContent = 'Add Bookmark';
-  bookmarkIdInput.value = '';
-  bookmarkForm.reset();
-  formContainer.classList.remove('hidden');
-});
-bookmarkSearch.addEventListener('input', renderBookmarks);
 
-// Import/Export
-exportBookmarksBtn.addEventListener('click', () => {
-  const data = { bookmarks, categories };
-  const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = 'bookmarks_backup.json';
-  a.click();
-});
-importBookmarksBtn.addEventListener('click', () => importBookmarksFile.click());
-importBookmarksFile.addEventListener('change', (e) => {
-  const file = e.target.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = (ev) => {
-    try {
-      const data = JSON.parse(ev.target.result);
-      if (data.bookmarks) bookmarks = data.bookmarks;
-      if (data.categories) categories = data.categories;
-      saveToStorage();
-      renderCategories();
-      renderBookmarks();
-    } catch { alert('Invalid file'); }
-  };
-  reader.readAsText(file);
-  importBookmarksFile.value = '';
-});
-
-// =============================================
-// PASSWORD GENERATOR (unchanged)
-// =============================================
-const UPPERCASE = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-const LOWERCASE = 'abcdefghijklmnopqrstuvwxyz';
-const NUMBERS = '0123456789';
-const SYMBOLS = '!@#$%^&*()_+-=[]{}|;:,.<>?';
-function generatePassword() {
-  let charset = '';
-  if (includeUppercase.checked) charset += UPPERCASE;
-  if (includeLowercase.checked) charset += LOWERCASE;
-  if (includeNumbers.checked) charset += NUMBERS;
-  if (includeSymbols.checked) charset += SYMBOLS;
-  if (!charset) { alert('Select at least one character type'); return ''; }
-  let pwd = '';
-  for (let i=0; i<parseInt(passwordLength.value); i++) pwd += charset[Math.floor(Math.random()*charset.length)];
-  return pwd;
+.panel {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 24px;
+  padding: 1.8rem;
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(4px);
+  transition: box-shadow 0.2s;
 }
-function updateStrength(pwd) {
-  let strength = 0;
-  if (pwd.length>=12) strength++;
-  if (/[a-z]/.test(pwd)) strength++;
-  if (/[A-Z]/.test(pwd)) strength++;
-  if (/[0-9]/.test(pwd)) strength++;
-  if (/[^a-zA-Z0-9]/.test(pwd)) strength++;
-  let level = strength>=4 ? 'strong' : strength>=3 ? 'medium' : 'weak';
-  strengthBar.dataset.strength = level;
-  strengthText.textContent = level.charAt(0).toUpperCase()+level.slice(1);
+
+.panel:hover {
+  box-shadow: var(--shadow), var(--glow);
 }
-function refreshPassword() {
-  const pwd = generatePassword();
-  generatedPassword.value = pwd;
-  updateStrength(pwd);
-  if (historyEnabled && pwd) {
-    passwordHistory.unshift(pwd);
-    if (passwordHistory.length>10) passwordHistory.pop();
-    renderHistory();
-  }
+
+.panel-large {
+  flex: 2;
+  min-width: 320px;
 }
-function renderHistory() {
-  if (!passwordHistory.length) {
-    passwordHistoryList.innerHTML = '<div class="history-item">No history</div>';
-    return;
-  }
-  passwordHistoryList.innerHTML = passwordHistory.map(p => 
-    `<div class="history-item"><span>${p}</span><button class="copy-history" data-pwd="${p}">📋</button></div>`
-  ).join('');
-  document.querySelectorAll('.copy-history').forEach(b => b.addEventListener('click', () => navigator.clipboard.writeText(b.dataset.pwd)));
+
+.panel-small {
+  flex: 1;
+  min-width: 300px;
 }
-passwordLength.addEventListener('input', () => lengthValue.textContent = passwordLength.value);
-generatePasswordBtn.addEventListener('click', refreshPassword);
-copyPasswordBtn.addEventListener('click', () => { navigator.clipboard.writeText(generatedPassword.value); alert('Copied!'); });
-enableHistory.addEventListener('change', (e) => {
-  historyEnabled = e.target.checked;
-  passwordHistoryList.classList.toggle('hidden', !historyEnabled);
-  clearHistoryBtn.classList.toggle('hidden', !historyEnabled);
-  if (!historyEnabled) passwordHistory = [];
-  else renderHistory();
-});
-clearHistoryBtn.addEventListener('click', () => { passwordHistory = []; renderHistory(); });
-refreshPassword();
 
-// =============================================
-// FIXED: LINK CHECKER
-// =============================================
-async function checkLink(url) {
-  statusIndicator.className = 'status-indicator';
-  statusText.textContent = 'Checking...';
-  const start = performance.now();
-
-  const show = (ok, msg) => {
-    statusIndicator.classList.add(ok ? 'success' : 'error');
-    statusText.textContent = `${ok ? '✅' : '❌'} ${msg} · ${Math.round(performance.now()-start)}ms`;
-  };
-
-  // Attempt 1: fetch with no-cors (opaque)
-  try {
-    const controller = new AbortController();
-    const id = setTimeout(() => controller.abort(), 5000);
-    await fetch(url, { method: 'GET', mode: 'no-cors', signal: controller.signal });
-    clearTimeout(id);
-    show(true, 'Reachable (opaque)');
-    return;
-  } catch (e) {
-    // If it fails, try image ping
-  }
-
-  // Attempt 2: Image ping (works even if response is error)
-  try {
-    await new Promise((resolve, reject) => {
-      const img = new Image();
-      const timer = setTimeout(() => { img.src = ''; reject('timeout'); }, 5000);
-      img.onload = () => { clearTimeout(timer); resolve(); };
-      img.onerror = () => { clearTimeout(timer); resolve(); }; // error response still means reachable
-      img.src = url + (url.includes('?')?'&':'?') + '_=' + Date.now();
-    });
-    show(true, 'Reachable (image)');
-    return;
-  } catch (e) {
-    show(false, 'Cannot reach server');
-  }
+.panel-half {
+  flex: 1;
+  min-width: 300px;
 }
-checkLinkBtn.addEventListener('click', () => {
-  let url = linkUrlInput.value.trim();
-  if (!url) return;
-  if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
-  checkLink(url);
-});
 
-// =============================================
-// FIXED: QR CODE GENERATOR
-// =============================================
-generateQrBtn.addEventListener('click', () => {
-  const text = qrUrlInput.value.trim();
-  if (!text) { alert('Enter text/URL'); return; }
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
 
-  qrPlaceholder.style.display = 'flex';
-  qrPlaceholder.textContent = 'Generating...';
-  qrCanvas.style.display = 'none';
-  downloadQrBtn.disabled = true;
+.panel-header h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
 
-  // Clear canvas
-  const ctx = qrCanvas.getContext('2d');
-  ctx.clearRect(0, 0, qrCanvas.width, qrCanvas.height);
+.panel-actions {
+  display: flex;
+  gap: 8px;
+}
 
-  // Use toDataURL for reliability
-  if (typeof QRCode === 'undefined') {
-    qrPlaceholder.textContent = 'QR library failed to load.';
-    return;
-  }
+/* =============================================
+   BUTTONS & INPUTS
+   ============================================= */
+.btn {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  padding: 0.6rem 1.2rem;
+  border-radius: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 0.95rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
 
-  QRCode.toDataURL(text, { width: 200, margin: 2, errorCorrectionLevel: 'M' }, (err, url) => {
-    if (err) {
-      console.error(err);
-      qrPlaceholder.textContent = 'Failed to generate QR.';
-      return;
-    }
-    const img = new Image();
-    img.onload = () => {
-      qrCanvas.width = img.width;
-      qrCanvas.height = img.height;
-      ctx.drawImage(img, 0, 0);
-      qrCanvas.style.display = 'block';
-      qrPlaceholder.style.display = 'none';
-      downloadQrBtn.disabled = false;
-    };
-    img.onerror = () => {
-      qrPlaceholder.textContent = 'Failed to load QR image.';
-    };
-    img.src = url;
-  });
-});
+.btn-primary {
+  background: var(--accent-primary);
+  border-color: var(--accent-primary);
+  color: #0b0f15;
+  font-weight: 600;
+}
 
-downloadQrBtn.addEventListener('click', () => {
-  const link = document.createElement('a');
-  link.download = 'qrcode.png';
-  link.href = qrCanvas.toDataURL();
-  link.click();
-});
+.btn-primary:hover {
+  background: #33d9ff;
+  box-shadow: 0 0 12px var(--accent-primary);
+}
 
-// =============================================
-// INITIAL RENDER & SORTABLE
-// =============================================
-renderCategories();
-renderBookmarks();
+.btn-outline {
+  background: transparent;
+  border-color: var(--border-color);
+}
 
-new Sortable(bookmarksContainer, {
-  animation: 150,
-  ghostClass: 'sortable-ghost',
-  onEnd: function() {
-    const cards = [...bookmarksContainer.querySelectorAll('.bookmark-card')];
-    const newOrderIds = cards.map(c => c.dataset.id);
-    const catBookmarks = bookmarks.filter(b => b.category === currentCategory);
-    const other = bookmarks.filter(b => b.category !== currentCategory);
-    const reordered = newOrderIds.map(id => catBookmarks.find(b => b.id === id)).filter(b => b);
-    bookmarks = [...other, ...reordered];
-    saveToStorage();
-  }
-});
+.btn-outline:hover {
+  background: var(--bg-secondary);
+  border-color: var(--accent-primary);
+}
+
+.btn-small {
+  padding: 0.4rem 1rem;
+  font-size: 0.85rem;
+}
+
+.btn-full {
+  width: 100%;
+}
+
+.icon-btn {
+  background: transparent;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: 0.5rem 0.8rem;
+  cursor: pointer;
+  color: var(--text-primary);
+  transition: all 0.2s;
+  font-size: 1.1rem;
+}
+
+.icon-btn:hover {
+  background: var(--bg-secondary);
+  border-color: var(--accent-primary);
+}
+
+input, select, textarea {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 0.7rem 1rem;
+  color: var(--text-primary);
+  font-size: 0.95rem;
+  width: 100%;
+  transition: border 0.2s;
+}
+
+input:focus, select:focus, textarea:focus {
+  outline: none;
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 8px rgba(0,212,255,0.3);
+}
+
+/* =============================================
+   BOOKMARK MANAGER SPECIFIC
+   ============================================= */
+.category-section {
+  margin-bottom: 1.5rem;
+}
+
+.category-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.category-chip {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 30px;
+  padding: 0.4rem 1rem;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.category-chip.active {
+  background: var(--accent-primary);
+  color: #0b0f15;
+  border-color: var(--accent-primary);
+}
+
+.category-chip .delete-cat {
+  margin-left: 6px;
+  opacity: 0.7;
+  font-weight: bold;
+}
+
+.category-chip .delete-cat:hover {
+  opacity: 1;
+  color: var(--danger);
+}
+
+.add-category {
+  display: flex;
+  gap: 8px;
+}
+
+.bookmark-controls {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 1.5rem;
+}
+
+.search-input {
+  flex: 1;
+}
+
+.form-container {
+  background: var(--bg-secondary);
+  border-radius: 20px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  border: 1px solid var(--border-color);
+}
+
+.form-group {
+  margin-bottom: 1.2rem;
+}
+
+.form-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+.bookmarks-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.bookmark-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  transition: all 0.2s;
+  cursor: pointer;
+  position: relative;
+}
+
+.bookmark-card:hover {
+  transform: translateY(-4px);
+  border-color: var(--accent-primary);
+  box-shadow: var(--glow);
+}
+
+.bookmark-favicon {
+  width: 32px;
+  height: 32px;
+  margin-bottom: 8px;
+  border-radius: 6px;
+}
+
+.bookmark-title {
+  font-weight: 600;
+  margin-bottom: 4px;
+  word-break: break-word;
+}
+
+.bookmark-url {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  word-break: break-all;
+  margin-bottom: 8px;
+}
+
+.bookmark-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: auto;
+}
+
+.bookmark-actions button {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 1rem;
+  padding: 4px;
+}
+
+.bookmark-actions button:hover {
+  color: var(--accent-primary);
+}
+
+.empty-message {
+  text-align: center;
+  color: var(--text-secondary);
+  padding: 2rem;
+  font-style: italic;
+}
+
+.hidden {
+  display: none !important;
+}
+
+/* =============================================
+   PASSWORD GENERATOR
+   ============================================= */
+.password-display {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 1rem;
+}
+
+.password-display input {
+  font-family: 'Courier New', monospace;
+  font-size: 1.2rem;
+  text-align: center;
+  letter-spacing: 2px;
+}
+
+.strength-meter {
+  margin-bottom: 1.5rem;
+}
+
+.strength-bar {
+  height: 8px;
+  background: var(--bg-secondary);
+  border-radius: 10px;
+  overflow: hidden;
+  margin-bottom: 4px;
+}
+
+.strength-bar::after {
+  content: '';
+  display: block;
+  height: 100%;
+  width: 0%;
+  background: var(--danger);
+  transition: width 0.3s, background 0.3s;
+}
+
+.strength-bar[data-strength="weak"]::after { width: 25%; background: var(--danger); }
+.strength-bar[data-strength="medium"]::after { width: 50%; background: var(--warning); }
+.strength-bar[data-strength="strong"]::after { width: 75%; background: var(--success); }
+.strength-bar[data-strength="very-strong"]::after { width: 100%; background: var(--accent-primary); }
+
+#strengthText {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.options {
+  margin: 1.2rem 0;
+}
+
+.option {
+  margin-bottom: 0.8rem;
+}
+
+.option-check {
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.option-check input[type="checkbox"] {
+  width: auto;
+  margin-right: 6px;
+}
+
+.history-section {
+  margin-top: 1.5rem;
+  border-top: 1px solid var(--border-color);
+  padding-top: 1.2rem;
+}
+
+.history-list {
+  max-height: 150px;
+  overflow-y: auto;
+  margin: 0.8rem 0;
+  background: var(--bg-secondary);
+  border-radius: 8px;
+  padding: 0.5rem;
+  font-family: monospace;
+  font-size: 0.8rem;
+}
+
+.history-item {
+  padding: 0.3rem 0;
+  border-bottom: 1px dashed var(--border-color);
+  display: flex;
+  justify-content: space-between;
+}
+
+.history-item:last-child {
+  border-bottom: none;
+}
+
+/* =============================================
+   LINK CHECKER
+   ============================================= */
+.link-checker .input-group {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 1.5rem;
+}
+
+.link-result {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 1rem;
+  background: var(--bg-secondary);
+  border-radius: 12px;
+}
+
+.status-indicator {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--text-secondary);
+}
+
+.status-indicator.success { background: var(--success); }
+.status-indicator.warning { background: var(--warning); }
+.status-indicator.error { background: var(--danger); }
+
+/* =============================================
+   QR CODE GENERATOR
+   ============================================= */
+.qr-generator .input-group {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 1.5rem;
+}
+
+.qr-result {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+#qrCanvas {
+  max-width: 200px;
+  height: auto;
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 8px;
+  background: white;
+  display: none;
+}
+
+.qr-placeholder {
+  width: 200px;
+  height: 200px;
+  background: var(--bg-secondary);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  border: 1px dashed var(--border-color);
+}
+
+/* =============================================
+   UTILITIES
+   ============================================= */
+.hidden {
+  display: none !important;
+}
+
+/* =============================================
+   RESPONSIVE
+   ============================================= */
+@media (max-width: 900px) {
+  body { padding: 1rem; }
+  h1 { font-size: 2rem; }
+  .panel-large, .panel-small, .panel-half { flex: 1 1 100%; }
+}
