@@ -1,343 +1,422 @@
+/* ===== GLOBAL ===== */
 body {
   margin: 0;
-  font-family: Arial, sans-serif;
-  background: #191919;
-  color: white;
+  font-family: 'Segoe UI', 'Arial', sans-serif;
+  background: #0f0f0f;
+  color: #f0f0f0;
   min-height: 100vh;
-  box-sizing: border-box;
   display: flex;
   justify-content: center;
   align-items: center;
   overflow-x: hidden;
 }
 
+/* ===== MAIN CONTAINER ===== */
 .container {
   width: 100%;
-  max-width: 1120px;
-  min-height: 575px;
-  text-align: center;
-  background: #1f1f1f;
-  border-radius: 50px;
-  padding: 55px 60px 45px;
+  max-width: 1200px;
+  min-height: 600px;
+  background: rgba(25, 25, 25, 0.95);
+  backdrop-filter: blur(10px);
+  border-radius: 48px;
+  padding: 40px 50px;
+  box-shadow: 0 25px 40px rgba(0, 0, 0, 0.5);
   position: relative;
   box-sizing: border-box;
+  border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
-.back-btn,
-.back-btn:visited {
+/* Back button */
+.back-btn {
   position: absolute;
-  top: 16px;
-  left: 16px;
+  top: 20px;
+  left: 20px;
   color: #aaa;
   text-decoration: none;
-  font-size: 24px;
+  font-size: 28px;
   line-height: 1;
   z-index: 50;
+  transition: color 0.2s;
 }
+.back-btn:hover { color: white; }
 
-.back-btn:hover {
-  color: white;
-}
-
-input,
-textarea {
-  width: 80%;
-  max-width: 100%;
+/* ===== INPUTS & FORMS ===== */
+input, textarea {
+  width: 100%;
   box-sizing: border-box;
-  padding: 12px;
-  margin: 10px 0;
-  border-radius: 12px;
-  border: none;
+  padding: 14px 18px;
+  margin: 8px 0;
+  border-radius: 20px;
+  border: 1px solid #3a3a3a;
   font-size: 16px;
-  background: #2a2a2a;
+  background: #1e1e1e;
   color: white;
+  transition: border 0.2s, box-shadow 0.2s;
+}
+input:focus, textarea:focus {
+  outline: none;
+  border-color: var(--accent, #ff6a00);
+  box-shadow: 0 0 0 3px rgba(255, 106, 0, 0.2);
 }
 
 textarea {
-  resize: none;
-  overflow-y: auto;
-  min-height: 110px;
+  resize: vertical;
+  min-height: 100px;
 }
 
-button {
-  padding: 12px 25px;
-  border: none;
-  margin-top: 15px;
-  margin-bottom: 25px;
-  border-radius: 15px;
+/* Datetime group labels */
+.datetime-group {
+  margin: 12px 0;
+}
+.datetime-group label {
+  display: block;
+  text-align: left;
+  font-size: 14px;
+  opacity: 0.8;
+  margin-bottom: 4px;
+}
+
+/* Color picker */
+.color-picker-group {
+  margin: 16px 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.color-picker-group label {
+  font-size: 15px;
+}
+#accent-color {
+  width: 60px;
+  height: 40px;
+  padding: 4px;
+  border-radius: 12px;
+  background: transparent;
   cursor: pointer;
-  font-weight: bold;
-  background: linear-gradient(135deg, #ff6a00, #ee0979);
-  color: white;
+}
+
+/* Buttons */
+button {
+  padding: 14px 28px;
+  border: none;
+  border-radius: 40px;
+  cursor: pointer;
+  font-weight: 600;
   font-size: 16px;
-  transition: 0.3s;
+  background: linear-gradient(135deg, var(--accent, #ff6a00), var(--accent-secondary, #ee0979));
+  color: white;
+  transition: all 0.2s ease;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+  letter-spacing: 0.3px;
 }
-
 button:hover {
-  transform: scale(1.05);
+  transform: translateY(-3px);
+  box-shadow: 0 15px 25px rgba(0, 0, 0, 0.4);
+  filter: brightness(1.1);
+}
+button:active {
+  transform: translateY(1px);
 }
 
+#start-btn {
+  margin: 30px auto 0;
+  min-width: 220px;
+  display: block;
+}
+
+#reset-btn {
+  margin: 30px 0 0 auto;
+  background: #333;
+  box-shadow: none;
+  padding: 10px 24px;
+  font-size: 15px;
+}
+
+/* ===== TITLE & HEADINGS ===== */
 #counter-title {
-  margin-bottom: 16px;
+  font-size: 2.8rem;
+  font-weight: 700;
+  margin-bottom: 30px;
+  background: linear-gradient(135deg, #fff, #ccc);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
 
 #display-title {
-  margin-bottom: 65px;
-  margin-top: -3px;
+  font-size: 2.5rem;
+  margin: 0 0 20px;
   cursor: pointer;
+  transition: opacity 0.2s;
 }
+#display-title:hover { opacity: 0.7; }
 
-#display-title:hover,
-#display-quote:hover {
-  opacity: 0.8;
+/* ===== COUNTDOWN PANEL ===== */
+.counter-panel {
+  margin: 20px 0 30px;
+  padding: 20px 10px;
+  border-radius: 36px;
+  background: rgba(255, 255, 255, 0.02);
+  backdrop-filter: blur(5px);
+  border: 1px solid rgba(255, 255, 255, 0.03);
 }
-
 
 #countdown {
   display: flex;
   justify-content: center;
-  margin-top: 55px;
-  margin-bottom: 85px;
-  gap: 10px;
+  gap: 12px;
   flex-wrap: wrap;
-  align-items: center;
 }
 
-#countdown div {
-  background: rgba(255,255,255,0.05);
-  backdrop-filter: blur(10px);
-  padding: 15px;
-  border-radius: 15px;
-  min-width: 90px;
-  transition: 0.3s;
-  position: relative;
+#countdown > div {
+  background: rgba(20, 20, 20, 0.7);
+  backdrop-filter: blur(8px);
+  padding: 18px 10px;
+  border-radius: 24px;
+  min-width: 95px;
+  transition: all 0.3s;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
 }
-
-#countdown div:hover {
-  transform: translateY(-5px) scale(1.05);
+#countdown > div:hover {
+  transform: translateY(-8px) scale(1.02);
+  border-color: var(--accent, #ff6a00);
 }
 
 #countdown span {
-  font-size: 28px;
-  font-weight: bold;
+  font-size: 38px;
+  font-weight: 800;
   display: block;
+  line-height: 1.2;
+  color: var(--accent, #ff6a00);
+}
+#countdown small {
+  font-size: 13px;
+  opacity: 0.7;
+  text-transform: uppercase;
+  letter-spacing: 1px;
 }
 
-.tick {
-  animation: pop 0.3s ease;
-}
-
+/* Animations */
+.tick { animation: pop 0.3s ease; }
 @keyframes pop {
   0% { transform: scale(1); }
-  50% { transform: scale(1.3); color: #ff6a00; }
+  50% { transform: scale(1.2); color: #fff; }
   100% { transform: scale(1); }
 }
-
 .danger {
-  box-shadow: 0 0 15px red;
+  box-shadow: 0 0 20px #ff3a3a !important;
   animation: pulse 1s infinite;
 }
-
 @keyframes pulse {
-  0% { box-shadow: 0 0 5px red; }
-  50% { box-shadow: 0 0 20px red; }
-  100% { box-shadow: 0 0 5px red; }
+  0% { box-shadow: 0 0 5px #ff3a3a; }
+  50% { box-shadow: 0 0 25px #ff3a3a; }
+  100% { box-shadow: 0 0 5px #ff3a3a; }
 }
 
+/* ===== PROGRESS BAR ===== */
 .progress-container {
-  margin-top: 22px;
+  margin: 30px 0 10px;
   position: relative;
-  height: 34px;
+  height: 40px;
   width: 100%;
   overflow: visible;
 }
-
 .progress-bar {
   width: 100%;
-  height: 10px;
-  background: #333;
-  border-radius: 10px;
-  overflow: hidden;
+  height: 12px;
+  background: #2a2a2a;
+  border-radius: 20px;
+  overflow: visible;
+  box-shadow: inset 0 2px 6px rgba(0,0,0,0.5);
 }
-
 .progress-fill {
   height: 100%;
   width: 0%;
-  background: linear-gradient(90deg, #ff6a00, #ee0979);
-  transition: width 1s linear;
+  background: linear-gradient(90deg, var(--accent, #ff6a00), var(--accent-secondary, #ee0979));
+  border-radius: 20px;
+  transition: width 0.8s cubic-bezier(0.2, 0.9, 0.4, 1);
+  box-shadow: 0 0 12px var(--accent, #ff6a00);
 }
-
 .runner {
   position: absolute;
-  top: -23px;
+  top: -28px;
   left: 0%;
-  width: 31px;
+  width: 36px;
   height: auto;
-  transform: none;
+  filter: drop-shadow(0 4px 6px rgba(0,0,0,0.5));
   pointer-events: none;
-  transition: left 1s linear;
+  transition: left 0.8s cubic-bezier(0.2, 0.9, 0.4, 1);
+  z-index: 10;
 }
 
-.controls {
-  margin-top: 16px;
-  display: flex;
-  justify-content: center;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-
-.controls button {
-  padding: 10px 16px;
-  font-size: 14px;
-}
-
-#start-btn {
-  display: block;
-  margin: 18px auto 0;
-  min-width: 190px;
-}
-
-#reset-btn {
-  display: block;
-  margin: 25px auto 0;
-  margin-right: 0px;
-}
-
-.modal {
-  display: none;
-  position: fixed;
-  z-index: 999;
-  left: 0;
-  top: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0,0,0,0.7);
-  justify-content: center;
-  align-items: center;
-}
-
-.modal-content {
-  background: #222;
-  padding: 20px;
-  border-radius: 15px;
-  width: 300px;
-  text-align: center;
-  position: relative;
-}
-
-.modal-content input {
-  width: 80%;
-  margin: 10px 0;
-  padding: 8px;
-}
-
-.modal-content button {
-  margin-top: 10px;
-}
-
-.modal .close {
-  position: absolute;
-  top: 10px;
-  right: 15px;
-  cursor: pointer;
-  font-size: 20px;
-}
-
-/* ---------- FIXED FLAG STYLES ---------- */
+/* ===== FLAGS (Start/End markers) ===== */
 .flag {
   position: absolute;
-  top: -20px;          /* Move flag above progress bar */
+  top: -24px;
   width: 0;
   height: 0;
-  z-index: 30;         /* Ensure above runner */
+  z-index: 30;
   pointer-events: none;
-  cursor: pointer;
 }
-
 .flag-anchor {
   position: absolute;
-  left: ;
+  left: 0;
   top: 0;
-  transform: translate(-25%, -25%);  /* Center the flag exactly on the percentage point */
-  font-size: 20px;
+  transform: translate(-50%, -50%);
+  font-size: 22px;
   line-height: 1;
-  filter: drop-shadow(0 0 4px rgba(0,0,0,0.5));
-  pointer-events: auto;  /* Allow hover for tooltip */
+  filter: drop-shadow(0 0 6px rgba(0,0,0,0.7));
+  pointer-events: auto;
+  cursor: help;
 }
-
-.flag-start {
-  left: 0%;
-}
-
-.flag-end {
-  left: 100%;
-  transform: translateX(-100%);
-}
-
+.flag-start { left: 0%; }
+.flag-end { left: 100%; transform: translateX(-100%); }
 .flag-tooltip {
   position: absolute;
-  bottom: 100%;
+  bottom: 120%;
   left: 50%;
-  transform: translateX(-50%) translateY(0);
-  background: #ff6a00;
+  transform: translateX(-50%);
+  background: var(--accent, #ff6a00);
   color: white;
-  padding: 4px 8px;
-  border-radius: 6px;
+  padding: 6px 12px;
+  border-radius: 30px;
   font-size: 12px;
-  opacity: 0;
   white-space: nowrap;
+  opacity: 0;
   pointer-events: none;
-  transition: all 0.3s;
+  transition: opacity 0.2s, transform 0.2s;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.3);
 }
-
-.flag:hover .flag-tooltip,
-.ms-pin:hover .flag-tooltip {
+.flag:hover .flag-tooltip {
   opacity: 1;
-  transform: translateX(-50%) translateY(-10px);
+  transform: translateX(-50%) translateY(-8px);
 }
 
+/* ===== MILESTONE PINS ===== */
 .ms-pin {
   position: absolute;
-  top: -6px;
+  top: -8px;
   transform: translateX(-50%);
   width: 0;
   height: 0;
   cursor: pointer;
   z-index: 25;
 }
-
 .pin-line {
   width: 2px;
-  height: 16px;
+  height: 20px;
   margin: 0 auto;
-  border-radius: 999px;
+  border-radius: 4px;
 }
-
 .pin-dot {
-  transform: translate(-41%, -7%);
-  width: 12px;
-  height: 12px;
+  transform: translate(-50%, -4px);
+  width: 14px;
+  height: 14px;
   border-radius: 50%;
   margin: 0 auto;
+  border: 2px solid rgba(255,255,255,0.3);
 }
 
+/* Milestone view panel */
 #milestone-view {
   display: none;
-  margin-top: 50px;
-  margin-bottom: 80px;
-  padding: 40px;
-  border-radius: 18px;
-  background: rgba(28, 28, 28);
-  border: 1px solid rgba(28, 28, 28);
+  margin: 30px 0;
+  padding: 30px;
+  border-radius: 30px;
+  background: rgba(20, 20, 20, 0.8);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255,255,255,0.05);
   text-align: center;
   cursor: pointer;
-  user-select: none;
 }
 
+/* ===== QUOTE SECTION (left-aligned blockquote) ===== */
+#display-quote {
+  display: block;
+  margin: 40px 0 20px 0;
+  padding: 20px 30px;
+  font-size: 1.4rem;
+  font-style: italic;
+  text-align: left;
+  border-left: 6px solid var(--accent, #ff6a00);
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 0 24px 24px 0;
+  color: #ddd;
+  position: relative;
+  transition: opacity 0.2s;
+  cursor: pointer;
+}
+#display-quote::before {
+  content: "“";
+  font-size: 4rem;
+  position: absolute;
+  left: 10px;
+  top: -10px;
+  opacity: 0.3;
+  color: var(--accent, #ff6a00);
+}
+#display-quote:hover {
+  opacity: 0.8;
+  background: rgba(255,255,255,0.05);
+}
+
+/* ===== CONTROLS ===== */
+.controls {
+  margin: 20px 0;
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+  flex-wrap: wrap;
+}
+.controls button {
+  padding: 12px 22px;
+  font-size: 14px;
+  margin: 0;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+
+/* ===== MODAL ===== */
+.modal {
+  display: none;
+  position: fixed;
+  z-index: 999;
+  left: 0; top: 0;
+  width: 100%; height: 100%;
+  background: rgba(0,0,0,0.8);
+  backdrop-filter: blur(5px);
+  justify-content: center;
+  align-items: center;
+}
+.modal-content {
+  background: #1e1e1e;
+  padding: 30px;
+  border-radius: 32px;
+  width: 360px;
+  text-align: center;
+  position: relative;
+  border: 1px solid #444;
+  box-shadow: 0 25px 40px rgba(0,0,0,0.6);
+}
+.modal-content input {
+  margin: 12px 0;
+}
+.modal .close {
+  position: absolute;
+  top: 15px; right: 20px;
+  cursor: pointer;
+  font-size: 24px;
+  opacity: 0.7;
+}
+.modal .close:hover { opacity: 1; }
+
+/* Delete button inside milestone list */
 .ms-delete-btn {
   position: absolute;
-  right: 10px;
-  bottom: 10px;
-  padding: 6px 10px;
-  font-size: 11px;
+  right: 12px;
+  bottom: 12px;
+  padding: 6px 14px;
+  font-size: 12px;
+  background: #b00020;
+  border-radius: 20px;
 }
