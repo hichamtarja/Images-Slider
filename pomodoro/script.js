@@ -1,23 +1,19 @@
 // ======================== GLOBAL STATE & DOM ELEMENTS ========================
-// ---------- Timer state ----------
 let timerInterval = null;
-let currentSessionType = 'work';        // 'work', 'shortBreak', 'longBreak'
-let sessionCount = 1;                  // 1-based, resets after long break
-let timeLeft = 25 * 60;                // in seconds
+let currentSessionType = 'work';
+let sessionCount = 1;
+let timeLeft = 25 * 60;
 let isRunning = false;
 let totalSessionTime = 25 * 60;
 
-// ---------- Statistics ----------
 let todayPomodoros = 0;
 let streakDays = 0;
 let lastActiveDate = null;
-let sessionsHistory = [];              // array of session objects
-
-// ---------- Tasks ----------
+let sessionsHistory = [];
 let tasks = [];
-let activeTaskId = null;               // ID of the task currently being worked on
+let activeTaskId = null;
+let showCompleted = true;
 
-// ---------- Settings (with defaults) ----------
 let settings = {
   workDuration: 25,
   shortBreak: 5,
@@ -28,11 +24,10 @@ let settings = {
   voiceEnabled: false,
   desktopNotify: true,
   fullscreenBreak: false,
-  fullscreenWork: false,               // New: full-screen back to work reminder
+  fullscreenWork: false,
   accentColor: '#ff6a00'
 };
 
-// ---------- Quotes ----------
 const quotes = [
   "Rest is not idleness.", 
   "Almost everything will work again if you unplug it for a few minutes.",
@@ -41,7 +36,6 @@ const quotes = [
   "Productivity is about sustainable rhythms.",
   "Step away to come back stronger."
 ];
-
 const workQuotes = [
   "Let's get back to it!",
   "Time to focus.",
@@ -50,12 +44,10 @@ const workQuotes = [
   "Deep work begins now."
 ];
 
-// ---------- Chart instance ----------
 let statsChart = null;
 let currentChartTab = 'daily';
 
-// ---------- DOM Elements ----------
-// Timer
+// DOM Elements
 const timerCanvas = document.getElementById('timer-canvas');
 const ctx = timerCanvas.getContext('2d');
 const minutesSpan = document.getElementById('timer-minutes');
@@ -70,17 +62,17 @@ const todayPomodorosSpan = document.getElementById('today-pomodoros');
 const streakDaysSpan = document.getElementById('streak-days');
 const quoteText = document.getElementById('quote-text');
 
-// Tasks
 const tasksListDiv = document.getElementById('tasks-list');
+const completedTasksDiv = document.getElementById('completed-tasks-list');
 const addTaskBtn = document.getElementById('add-task-btn');
 const tasksCompletedSpan = document.getElementById('tasks-completed-count');
+const toggleCompletedBtn = document.getElementById('toggle-completed-btn');
 
-// Modals
 const settingsModal = document.getElementById('settings-modal');
 const taskModal = document.getElementById('task-modal');
 const interruptModal = document.getElementById('interrupt-modal');
 const breakOverlay = document.getElementById('break-overlay');
-const workOverlay = document.getElementById('work-overlay'); // New overlay
+const workOverlay = document.getElementById('work-overlay');
 
 // Settings inputs
 const setWork = document.getElementById('set-work');
@@ -88,12 +80,20 @@ const setShort = document.getElementById('set-short');
 const setLong = document.getElementById('set-long');
 const setInterval = document.getElementById('set-interval');
 const setAccent = document.getElementById('set-accent');
+const colorBar = document.getElementById('color-bar');
 const setSound = document.getElementById('set-sound');
 const setVoice = document.getElementById('set-voice');
 const setDesktopNotify = document.getElementById('set-desktop-notify');
 const setFullscreenBreak = document.getElementById('set-fullscreen-break');
-const setFullscreenWork = document.getElementById('set-fullscreen-work'); // New
+const setFullscreenWork = document.getElementById('set-fullscreen-work');
 const saveSettingsBtn = document.getElementById('save-settings-btn');
+
+// Value displays for sliders
+const workValue = document.getElementById('work-value');
+const shortValue = document.getElementById('short-value');
+const longValue = document.getElementById('long-value');
+const intervalValue = document.getElementById('interval-value');
+const editEstimateValue = document.getElementById('edit-estimate-value');
 
 // Task edit
 const editTaskId = document.getElementById('edit-task-id');
@@ -103,24 +103,17 @@ const editTaskNotes = document.getElementById('edit-task-notes');
 const saveTaskBtn = document.getElementById('save-task-btn');
 const deleteTaskBtn = document.getElementById('delete-task-btn');
 
-// Interruption
 const interruptReason = document.getElementById('interrupt-reason');
 const saveInterruptBtn = document.getElementById('save-interrupt-btn');
 
-// Stats & History
 const tabBtns = document.querySelectorAll('.tab-btn');
 const historyPanel = document.getElementById('history-log-panel');
 const chartContainer = document.querySelector('.chart-container');
 const historyListDiv = document.getElementById('history-list');
 const exportDataBtn = document.getElementById('export-data-btn');
-
-// Focus mode
 const focusToggle = document.getElementById('focus-mode-toggle');
 
-// Accent color swatch
-const accentSwatch = document.getElementById('accent-swatch');
-
-// ======================== INITIALIZATION & LOCAL STORAGE ========================
+// ======================== INITIALIZATION & STORAGE ========================
 function loadFromStorage() {
   const saved = localStorage.getItem('pomodoro_suite');
   if (saved) {
@@ -133,7 +126,7 @@ function loadFromStorage() {
       streakDays = data.streakDays || 0;
       lastActiveDate = data.lastActiveDate || null;
       activeTaskId = data.activeTaskId || null;
-    } catch (e) { console.warn('Failed to load data'); }
+    } catch (e) {}
   }
   applySettingsToUI();
   updateStreak();
@@ -143,15 +136,7 @@ function loadFromStorage() {
 }
 
 function saveToStorage() {
-  const data = {
-    settings,
-    tasks,
-    sessions: sessionsHistory,
-    todayPomodoros,
-    streakDays,
-    lastActiveDate,
-    activeTaskId
-  };
+  const data = { settings, tasks, sessions: sessionsHistory, todayPomodoros, streakDays, lastActiveDate, activeTaskId };
   localStorage.setItem('pomodoro_suite', JSON.stringify(data));
 }
 
@@ -161,15 +146,19 @@ function applySettingsToUI() {
   setLong.value = settings.longBreak;
   setInterval.value = settings.longBreakInterval;
   setAccent.value = settings.accentColor;
+  colorBar.style.backgroundColor = settings.accentColor;
   setSound.value = settings.sound;
   setVoice.checked = settings.voiceEnabled;
   setDesktopNotify.checked = settings.desktopNotify;
   setFullscreenBreak.checked = settings.fullscreenBreak;
-  if (setFullscreenWork) setFullscreenWork.checked = settings.fullscreenWork;
+  setFullscreenWork.checked = settings.fullscreenWork;
   autoStartCheck.checked = settings.autoStart;
   document.documentElement.style.setProperty('--accent', settings.accentColor);
-  if (accentSwatch) accentSwatch.style.backgroundColor = settings.accentColor;
-  
+  document.documentElement.style.setProperty('--accent-glow', `${settings.accentColor}66`);
+  workValue.textContent = settings.workDuration;
+  shortValue.textContent = settings.shortBreak;
+  longValue.textContent = settings.longBreak;
+  intervalValue.textContent = settings.longBreakInterval;
   if (!isRunning) {
     timeLeft = settings.workDuration * 60;
     totalSessionTime = timeLeft;
@@ -178,18 +167,13 @@ function applySettingsToUI() {
   }
 }
 
-// Streak update
 function updateStreak() {
   const today = new Date().toDateString();
   if (lastActiveDate !== today) {
     if (lastActiveDate) {
       const yesterday = new Date();
       yesterday.setDate(yesterday.getDate() - 1);
-      if (lastActiveDate === yesterday.toDateString()) {
-        streakDays++;
-      } else {
-        streakDays = 1;
-      }
+      streakDays = (lastActiveDate === yesterday.toDateString()) ? streakDays + 1 : 1;
     } else {
       streakDays = 1;
     }
@@ -209,23 +193,15 @@ function updateTimerDisplay() {
 }
 
 function drawTimer(progress = null) {
-  const w = timerCanvas.width;
-  const h = timerCanvas.height;
-  const radius = 120;
-  const centerX = w/2;
-  const centerY = h/2;
-  
+  const w = timerCanvas.width, h = timerCanvas.height, radius = 120, centerX = w/2, centerY = h/2;
   ctx.clearRect(0, 0, w, h);
-  
   ctx.beginPath();
   ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
   ctx.strokeStyle = 'rgba(255,255,255,0.1)';
   ctx.lineWidth = 12;
   ctx.stroke();
-  
   if (progress === null) progress = timeLeft / totalSessionTime;
   const endAngle = (2 * Math.PI * progress) - (Math.PI / 2);
-  
   ctx.beginPath();
   ctx.arc(centerX, centerY, radius, -Math.PI/2, endAngle);
   ctx.strokeStyle = settings.accentColor;
@@ -250,112 +226,56 @@ function completeSession() {
   timerInterval = null;
   isRunning = false;
   startPauseBtn.textContent = 'Start';
-  
-  // Play sound (using simple Audio element to avoid autoplay restrictions)
   playSound(settings.sound);
-  
-  // Desktop notification
   if (settings.desktopNotify && Notification.permission === 'granted') {
-    new Notification(`Pomodoro Suite`, {
-      body: `${currentSessionType} session completed!`,
-    });
+    new Notification(`Pomodoro Suite`, { body: `${currentSessionType} session completed!` });
   }
-  
-  // Voice announcement BEFORE session type changes
   if (settings.voiceEnabled) {
-    const msgText = currentSessionType === 'work' ? 'Time for a break.' : 'Back to work.';
-    const msg = new SpeechSynthesisUtterance(msgText);
+    const msg = new SpeechSynthesisUtterance(currentSessionType === 'work' ? 'Time for a break.' : 'Back to work.');
     window.speechSynthesis.speak(msg);
   }
-  
-  // Log session
-  const session = {
-    type: currentSessionType,
-    duration: totalSessionTime / 60,
-    timestamp: new Date().toISOString(),
-    interruptions: []
-  };
+  const session = { type: currentSessionType, duration: totalSessionTime / 60, timestamp: new Date().toISOString(), interruptions: [] };
   sessionsHistory.push(session);
-  
-  // If work session completed, increment active task's completed pomodoros
   if (currentSessionType === 'work') {
     todayPomodoros++;
     updateStreak();
-    
     if (activeTaskId) {
-      const activeTask = tasks.find(t => t.id === activeTaskId);
-      if (activeTask && !activeTask.completed) {
-        activeTask.completedPomodoros = Math.min(
-          activeTask.completedPomodoros + 1,
-          activeTask.estimatedPomodoros
-        );
-        if (activeTask.completedPomodoros >= activeTask.estimatedPomodoros) {
-          activeTask.completed = true;
-        }
+      const task = tasks.find(t => t.id === activeTaskId);
+      if (task && !task.completed) {
+        task.completedPomodoros = Math.min(task.completedPomodoros + 1, task.estimatedPomodoros);
+        if (task.completedPomodoros >= task.estimatedPomodoros) task.completed = true;
       }
     }
   }
-  
-  // Show overlays if enabled
-  if (settings.fullscreenBreak && currentSessionType === 'work') {
-    breakOverlay.style.display = 'flex';
-  }
-  if (settings.fullscreenWork && currentSessionType !== 'work') {
-    if (workOverlay) workOverlay.style.display = 'flex';
-  }
-  
-  // Show quote
-  if (currentSessionType === 'work') {
-    quoteText.textContent = `“${quotes[Math.floor(Math.random() * quotes.length)]}”`;
-  } else {
-    quoteText.textContent = `“${workQuotes[Math.floor(Math.random() * workQuotes.length)]}”`;
-  }
-  
-  // Determine next session
+  if (settings.fullscreenBreak && currentSessionType === 'work') breakOverlay.style.display = 'flex';
+  if (settings.fullscreenWork && currentSessionType !== 'work') workOverlay.style.display = 'flex';
+  quoteText.textContent = currentSessionType === 'work' ? `“${quotes[Math.floor(Math.random() * quotes.length)]}”` : `“${workQuotes[Math.floor(Math.random() * workQuotes.length)]}”`;
   if (currentSessionType === 'work') {
     sessionCount++;
-    if (sessionCount > settings.longBreakInterval) {
-      currentSessionType = 'longBreak';
-      sessionCount = 1;
-    } else {
-      currentSessionType = 'shortBreak';
-    }
+    if (sessionCount > settings.longBreakInterval) { currentSessionType = 'longBreak'; sessionCount = 1; }
+    else currentSessionType = 'shortBreak';
   } else {
     currentSessionType = 'work';
   }
-  
-  // Set timer for next session
-  switch (currentSessionType) {
-    case 'work': timeLeft = settings.workDuration * 60; break;
-    case 'shortBreak': timeLeft = settings.shortBreak * 60; break;
-    case 'longBreak': timeLeft = settings.longBreak * 60; break;
-  }
+  timeLeft = (currentSessionType === 'work' ? settings.workDuration : currentSessionType === 'shortBreak' ? settings.shortBreak : settings.longBreak) * 60;
   totalSessionTime = timeLeft;
   updateSessionLabel();
   updateTimerDisplay();
   drawTimer(1);
-  
   updateQuickStats();
   renderTasks();
   saveToStorage();
   updateChart(currentChartTab);
   renderHistoryList();
-  
-  if (settings.autoStart) {
-    startTimer();
-  }
+  if (settings.autoStart) startTimer();
 }
 
 function startTimer() {
   if (isRunning) return;
-  // Resume AudioContext if needed? Not needed with simple Audio.
   isRunning = true;
   startPauseBtn.textContent = 'Pause';
   timerInterval = setInterval(tick, 1000);
-  
-  if (settings.desktopNotify && Notification.permission === 'default') {
-    Notification.requestPermission();
-  }
+  if (settings.desktopNotify && Notification.permission === 'default') Notification.requestPermission();
 }
 
 function pauseTimer() {
@@ -367,11 +287,7 @@ function pauseTimer() {
 
 function resetTimer() {
   pauseTimer();
-  switch (currentSessionType) {
-    case 'work': timeLeft = settings.workDuration * 60; break;
-    case 'shortBreak': timeLeft = settings.shortBreak * 60; break;
-    case 'longBreak': timeLeft = settings.longBreak * 60; break;
-  }
+  timeLeft = (currentSessionType === 'work' ? settings.workDuration : currentSessionType === 'shortBreak' ? settings.shortBreak : settings.longBreak) * 60;
   totalSessionTime = timeLeft;
   updateTimerDisplay();
   drawTimer(1);
@@ -383,85 +299,64 @@ function skipSession() {
 }
 
 function updateSessionLabel() {
-  sessionTypeLabel.textContent = currentSessionType === 'work' ? 'FOCUS' : 
-                                 currentSessionType === 'shortBreak' ? 'SHORT BREAK' : 'LONG BREAK';
+  sessionTypeLabel.textContent = currentSessionType === 'work' ? 'FOCUS' : (currentSessionType === 'shortBreak' ? 'SHORT BREAK' : 'LONG BREAK');
   sessionCounterSpan.textContent = `${sessionCount} / ${settings.longBreakInterval}`;
 }
 
-// ======================== SOUND (using simple Audio) ========================
 function playSound(type) {
-  let soundUrl = '';
-  // Using base64 or simple oscillator? For simplicity, use a short beep with Web Audio but wrapped in user gesture check.
-  // Since start is user-initiated, we can use AudioContext safely now.
   try {
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     const osc = audioCtx.createOscillator();
     const gain = audioCtx.createGain();
-    osc.connect(gain);
-    gain.connect(audioCtx.destination);
-    
-    let freq = 800;
-    if (type === 'bell') freq = 1200;
-    else if (type === 'chime') freq = 1000;
-    else if (type === 'digital') freq = 600;
-    
+    osc.connect(gain); gain.connect(audioCtx.destination);
+    let freq = type === 'bell' ? 1200 : type === 'chime' ? 1000 : type === 'digital' ? 600 : 800;
     osc.frequency.value = freq;
     gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
     gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.5);
-    osc.start();
-    osc.stop(audioCtx.currentTime + 0.5);
-  } catch(e) {
-    console.warn('Sound play failed:', e);
-  }
+    osc.start(); osc.stop(audioCtx.currentTime + 0.5);
+  } catch(e) {}
 }
 
 // ======================== TASKS ========================
 function renderTasks() {
-  if (!tasksListDiv) return;
+  const activeTasks = tasks.filter(t => !t.completed);
+  const completedTasks = tasks.filter(t => t.completed);
   tasksListDiv.innerHTML = '';
-  let completed = 0;
-  tasks.forEach((task) => {
-    const taskEl = document.createElement('div');
-    taskEl.className = `task-item ${activeTaskId === task.id ? 'active' : ''}`;
-    taskEl.dataset.id = task.id;
-    
-    const completedDots = Math.min(task.completedPomodoros, task.estimatedPomodoros);
-    const dotsHtml = Array.from({ length: task.estimatedPomodoros }, (_, i) => 
-      `<span class="pomodoro-dot ${i < completedDots ? 'completed' : ''}"></span>`
-    ).join('');
-    
-    taskEl.innerHTML = `
-      <div class="task-header">
-        <input type="checkbox" class="task-checkbox" ${task.completed ? 'checked' : ''}>
-        <div class="task-info">
-          <div class="task-title">${escapeHtml(task.title)}</div>
-          <div class="task-pomodoros">
-            <span>🍅 ${task.completedPomodoros}/${task.estimatedPomodoros}</span>
-            <div class="pomodoro-progress">${dotsHtml}</div>
-          </div>
-          ${task.notes ? `<small>📝 ${escapeHtml(task.notes.substring(0,30))}...</small>` : ''}
+  activeTasks.forEach(task => renderTaskItem(task, tasksListDiv));
+  completedTasksDiv.innerHTML = '';
+  if (showCompleted) completedTasks.forEach(task => renderTaskItem(task, completedTasksDiv, true));
+  const total = tasks.length;
+  const completedCount = tasks.filter(t => t.completed).length;
+  tasksCompletedSpan.textContent = `${completedCount}/${total} completed`;
+}
+
+function renderTaskItem(task, container, isCompleted = false) {
+  const taskEl = document.createElement('div');
+  taskEl.className = `task-item ${activeTaskId === task.id ? 'active' : ''}`;
+  const dotsHtml = Array.from({ length: task.estimatedPomodoros }, (_, i) => `<span class="pomodoro-dot ${i < task.completedPomodoros ? 'completed' : ''}"></span>`).join('');
+  taskEl.innerHTML = `
+    <div class="task-header">
+      <input type="checkbox" class="task-checkbox" ${task.completed ? 'checked' : ''}>
+      <div class="task-info">
+        <div class="task-title">${escapeHtml(task.title)}</div>
+        <div class="task-pomodoros">
+          <span>🍅 ${task.completedPomodoros}/${task.estimatedPomodoros}</span>
+          <div class="pomodoro-progress">${dotsHtml}</div>
         </div>
+        ${task.notes ? `<small>📝 ${escapeHtml(task.notes.substring(0,30))}...</small>` : ''}
       </div>
-    `;
-    taskEl.addEventListener('click', (e) => {
-      if (e.target.type === 'checkbox') {
-        task.completed = e.target.checked;
-        saveToStorage();
-        renderTasks();
-      } else {
-        // Set as active task
-        activeTaskId = task.id;
-        renderTasks();
-        saveToStorage();
-      }
-    });
-    taskEl.addEventListener('dblclick', () => {
-      openTaskModal(task);
-    });
-    tasksListDiv.appendChild(taskEl);
-    if (task.completed) completed++;
+    </div>
+  `;
+  taskEl.addEventListener('click', (e) => {
+    if (e.target.type === 'checkbox') {
+      task.completed = e.target.checked;
+      saveToStorage(); renderTasks();
+    } else {
+      activeTaskId = task.id; renderTasks(); saveToStorage();
+    }
   });
-  tasksCompletedSpan.textContent = `${completed}/${tasks.length} completed`;
+  taskEl.addEventListener('dblclick', () => openTaskModal(task));
+  container.appendChild(taskEl);
 }
 
 function openTaskModal(task = null) {
@@ -469,14 +364,12 @@ function openTaskModal(task = null) {
     editTaskId.value = task.id;
     editTaskTitle.value = task.title;
     editTaskEstimate.value = task.estimatedPomodoros;
+    editEstimateValue.textContent = task.estimatedPomodoros;
     editTaskNotes.value = task.notes || '';
     document.getElementById('task-modal-title').textContent = 'Edit Task';
     deleteTaskBtn.style.display = 'block';
   } else {
-    editTaskId.value = '';
-    editTaskTitle.value = '';
-    editTaskEstimate.value = 1;
-    editTaskNotes.value = '';
+    editTaskId.value = ''; editTaskTitle.value = ''; editTaskEstimate.value = 1; editEstimateValue.textContent = 1; editTaskNotes.value = '';
     document.getElementById('task-modal-title').textContent = 'New Task';
     deleteTaskBtn.style.display = 'none';
   }
@@ -487,31 +380,15 @@ function saveTask() {
   const id = editTaskId.value;
   const title = editTaskTitle.value.trim();
   if (!title) return alert('Title required');
-  const estimate = parseInt(editTaskEstimate.value) || 1;
+  const estimate = parseInt(editTaskEstimate.value);
   const notes = editTaskNotes.value.trim();
-  
   if (id) {
     const task = tasks.find(t => t.id === id);
-    if (task) {
-      task.title = title;
-      task.estimatedPomodoros = estimate;
-      task.notes = notes;
-      // Reset completed pomodoros if estimate changed? Keep as is.
-    }
+    if (task) { task.title = title; task.estimatedPomodoros = estimate; task.notes = notes; }
   } else {
-    tasks.push({
-      id: Date.now().toString(),
-      title,
-      estimatedPomodoros: estimate,
-      completedPomodoros: 0,
-      notes,
-      completed: false,
-      createdAt: new Date().toISOString()
-    });
+    tasks.push({ id: Date.now().toString(), title, estimatedPomodoros: estimate, completedPomodoros: 0, notes, completed: false });
   }
-  saveToStorage();
-  renderTasks();
-  taskModal.style.display = 'none';
+  saveToStorage(); renderTasks(); taskModal.style.display = 'none';
 }
 
 function deleteTask() {
@@ -519,58 +396,39 @@ function deleteTask() {
   if (id && confirm('Delete this task?')) {
     tasks = tasks.filter(t => t.id !== id);
     if (activeTaskId === id) activeTaskId = null;
-    saveToStorage();
-    renderTasks();
-    taskModal.style.display = 'none';
+    saveToStorage(); renderTasks(); taskModal.style.display = 'none';
   }
 }
 
-// ======================== STATISTICS & CHART (real data) ========================
+// ======================== STATISTICS ========================
 function getChartData(tab) {
-  const sessions = sessionsHistory.filter(s => s.type === 'work');
+  const workSessions = sessionsHistory.filter(s => s.type === 'work');
   const now = new Date();
-  
   if (tab === 'daily') {
-    // Last 7 days
-    const days = [];
-    const counts = [];
+    const days = [], counts = [];
     for (let i = 6; i >= 0; i--) {
-      const d = new Date(now);
-      d.setDate(now.getDate() - i);
+      const d = new Date(now); d.setDate(now.getDate() - i);
       const dateStr = d.toISOString().split('T')[0];
-      const count = sessions.filter(s => s.timestamp.startsWith(dateStr)).length;
       days.push(d.toLocaleDateString('en-US', { weekday: 'short' }));
-      counts.push(count);
+      counts.push(workSessions.filter(s => s.timestamp.startsWith(dateStr)).length);
     }
     return { labels: days, data: counts };
   } else if (tab === 'weekly') {
-    // Last 4 weeks
-    const weeks = [];
-    const counts = [];
+    const weeks = [], counts = [];
     for (let i = 3; i >= 0; i--) {
-      const start = new Date(now);
-      start.setDate(now.getDate() - i*7);
-      const end = new Date(start);
-      end.setDate(start.getDate() + 6);
-      const count = sessions.filter(s => {
-        const d = new Date(s.timestamp);
-        return d >= start && d <= end;
-      }).length;
+      const start = new Date(now); start.setDate(now.getDate() - i*7);
+      const end = new Date(start); end.setDate(start.getDate() + 6);
       weeks.push(`W${4-i}`);
-      counts.push(count);
+      counts.push(workSessions.filter(s => { const d = new Date(s.timestamp); return d >= start && d <= end; }).length);
     }
     return { labels: weeks, data: counts };
   } else {
-    // Monthly: last 6 months
-    const months = [];
-    const counts = [];
+    const months = [], counts = [];
     for (let i = 5; i >= 0; i--) {
-      const d = new Date(now);
-      d.setMonth(now.getMonth() - i);
+      const d = new Date(now); d.setMonth(now.getMonth() - i);
       const monthStr = d.toISOString().slice(0,7);
-      const count = sessions.filter(s => s.timestamp.startsWith(monthStr)).length;
       months.push(d.toLocaleDateString('en-US', { month: 'short' }));
-      counts.push(count);
+      counts.push(workSessions.filter(s => s.timestamp.startsWith(monthStr)).length);
     }
     return { labels: months, data: counts };
   }
@@ -580,40 +438,25 @@ function updateChart(tab) {
   currentChartTab = tab;
   const ctxChart = document.getElementById('stats-chart').getContext('2d');
   if (statsChart) statsChart.destroy();
-  
   const { labels, data } = getChartData(tab);
-  
   statsChart = new Chart(ctxChart, {
-    type: 'bar',
-    data: {
-      labels,
-      datasets: [{
-        label: 'Pomodoros',
-        data,
-        backgroundColor: settings.accentColor,
-        borderRadius: 8
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: { legend: { display: false } },
-      scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
-    }
+    type: 'bar', data: { labels, datasets: [{ label: 'Pomodoros', data, backgroundColor: settings.accentColor, borderRadius: 8 }] },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
   });
 }
 
 function renderHistoryList() {
-  const recent = sessionsHistory.slice(-20).reverse();
-  historyListDiv.innerHTML = recent.map(s => `
-    <div class="history-item">
-      <span>${s.type} · ${s.duration} min</span>
-      <span>${new Date(s.timestamp).toLocaleString()}</span>
-    </div>
-  `).join('');
+  historyListDiv.innerHTML = sessionsHistory.slice(-20).reverse().map(s => `<div class="history-item"><span>${s.type} · ${s.duration} min</span><span>${new Date(s.timestamp).toLocaleString()}</span></div>`).join('');
 }
 
-// ======================== EVENT LISTENERS & INIT ========================
+function updateQuickStats() {
+  todayPomodorosSpan.textContent = todayPomodoros;
+  streakDaysSpan.textContent = streakDays;
+}
+
+function escapeHtml(text) { return String(text).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+// ======================== EVENT LISTENERS ========================
 function init() {
   loadFromStorage();
   updateSessionLabel();
@@ -622,17 +465,28 @@ function init() {
   updateChart('daily');
   renderHistoryList();
   
-  // Timer controls
   startPauseBtn.addEventListener('click', () => isRunning ? pauseTimer() : startTimer());
   resetBtn.addEventListener('click', resetTimer);
   skipBtn.addEventListener('click', skipSession);
-  autoStartCheck.addEventListener('change', (e) => {
-    settings.autoStart = e.target.checked;
-    saveToStorage();
+  autoStartCheck.addEventListener('change', e => { settings.autoStart = e.target.checked; saveToStorage(); });
+  
+  document.getElementById('settings-toggle').addEventListener('click', () => settingsModal.style.display = 'flex');
+  
+  // Slider value updates
+  setWork.addEventListener('input', () => workValue.textContent = setWork.value);
+  setShort.addEventListener('input', () => shortValue.textContent = setShort.value);
+  setLong.addEventListener('input', () => longValue.textContent = setLong.value);
+  setInterval.addEventListener('input', () => intervalValue.textContent = setInterval.value);
+  editTaskEstimate.addEventListener('input', () => editEstimateValue.textContent = editTaskEstimate.value);
+  
+  // Color bar click triggers color input
+  colorBar.addEventListener('click', () => setAccent.click());
+  setAccent.addEventListener('input', e => {
+    colorBar.style.backgroundColor = e.target.value;
+    document.documentElement.style.setProperty('--accent', e.target.value);
+    document.documentElement.style.setProperty('--accent-glow', e.target.value + '66');
   });
   
-  // Settings
-  document.getElementById('settings-toggle').addEventListener('click', () => settingsModal.style.display = 'flex');
   saveSettingsBtn.addEventListener('click', () => {
     settings.workDuration = parseInt(setWork.value);
     settings.shortBreak = parseInt(setShort.value);
@@ -643,8 +497,7 @@ function init() {
     settings.voiceEnabled = setVoice.checked;
     settings.desktopNotify = setDesktopNotify.checked;
     settings.fullscreenBreak = setFullscreenBreak.checked;
-    if (setFullscreenWork) settings.fullscreenWork = setFullscreenWork.checked;
-    
+    settings.fullscreenWork = setFullscreenWork.checked;
     applySettingsToUI();
     if (!isRunning) resetTimer();
     saveToStorage();
@@ -652,104 +505,54 @@ function init() {
     updateChart(currentChartTab);
   });
   
-  // Accent color live preview
-  setAccent.addEventListener('input', (e) => {
-    document.documentElement.style.setProperty('--accent', e.target.value);
-    if (accentSwatch) accentSwatch.style.backgroundColor = e.target.value;
-  });
-  
-  // Modals close
   document.querySelectorAll('.close-modal').forEach(btn => btn.addEventListener('click', () => {
-    settingsModal.style.display = 'none';
-    taskModal.style.display = 'none';
-    interruptModal.style.display = 'none';
+    settingsModal.style.display = 'none'; taskModal.style.display = 'none'; interruptModal.style.display = 'none';
   }));
-  window.addEventListener('click', (e) => {
-    if (e.target.classList.contains('modal')) {
-      e.target.style.display = 'none';
-    }
-  });
+  window.addEventListener('click', e => { if (e.target.classList.contains('modal')) e.target.style.display = 'none'; });
   
-  // Tasks
   addTaskBtn.addEventListener('click', () => openTaskModal(null));
   saveTaskBtn.addEventListener('click', saveTask);
   deleteTaskBtn.addEventListener('click', deleteTask);
   
-  // Interruption
-  document.getElementById('log-interruption-btn').addEventListener('click', () => {
-    interruptModal.style.display = 'flex';
-  });
+  document.getElementById('log-interruption-btn').addEventListener('click', () => interruptModal.style.display = 'flex');
   saveInterruptBtn.addEventListener('click', () => {
     const reason = interruptReason.value.trim();
     if (reason && sessionsHistory.length) {
-      const lastSession = sessionsHistory[sessionsHistory.length-1];
-      if (!lastSession.interruptions) lastSession.interruptions = [];
-      lastSession.interruptions.push({ reason, time: new Date().toISOString() });
+      const last = sessionsHistory[sessionsHistory.length-1];
+      if (!last.interruptions) last.interruptions = [];
+      last.interruptions.push({ reason, time: new Date().toISOString() });
       saveToStorage();
     }
     interruptModal.style.display = 'none';
     interruptReason.value = '';
   });
   
-  // Break overlay close
-  document.getElementById('close-break-overlay').addEventListener('click', () => {
-    breakOverlay.style.display = 'none';
-  });
-  if (workOverlay) {
-    document.getElementById('close-work-overlay').addEventListener('click', () => {
-      workOverlay.style.display = 'none';
-    });
-  }
+  document.getElementById('close-break-overlay').addEventListener('click', () => breakOverlay.style.display = 'none');
+  document.getElementById('close-work-overlay').addEventListener('click', () => workOverlay.style.display = 'none');
   
-  // Tabs
-  tabBtns.forEach(btn => {
-    btn.addEventListener('click', () => {
-      tabBtns.forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      const tab = btn.dataset.tab;
-      if (tab === 'history') {
-        chartContainer.style.display = 'none';
-        historyPanel.style.display = 'block';
-        renderHistoryList();
-      } else {
-        chartContainer.style.display = 'block';
-        historyPanel.style.display = 'none';
-        updateChart(tab);
-      }
-    });
-  });
+  tabBtns.forEach(btn => btn.addEventListener('click', () => {
+    tabBtns.forEach(b => b.classList.remove('active')); btn.classList.add('active');
+    const tab = btn.dataset.tab;
+    if (tab === 'history') { chartContainer.style.display = 'none'; historyPanel.style.display = 'block'; renderHistoryList(); }
+    else { chartContainer.style.display = 'block'; historyPanel.style.display = 'none'; updateChart(tab); }
+  }));
   
-  // Export CSV
   exportDataBtn.addEventListener('click', () => {
     let csv = "Type,Duration,Timestamp\n";
-    sessionsHistory.forEach(s => {
-      csv += `${s.type},${s.duration},${s.timestamp}\n`;
-    });
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'pomodoro_sessions.csv';
-    a.click();
+    sessionsHistory.forEach(s => csv += `${s.type},${s.duration},${s.timestamp}\n`);
+    const blob = new Blob([csv], { type: 'text/csv' }), url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = 'pomodoro_sessions.csv'; a.click();
   });
   
-  // Focus mode
-  focusToggle.addEventListener('click', () => {
-    document.body.classList.toggle('focus-mode');
+  focusToggle.addEventListener('click', () => document.body.classList.toggle('focus-mode'));
+  
+  toggleCompletedBtn.addEventListener('click', () => {
+    showCompleted = !showCompleted;
+    toggleCompletedBtn.textContent = showCompleted ? '▼' : '▶';
+    renderTasks();
   });
   
-  // Request notification permission
   if (Notification.permission === 'default') Notification.requestPermission();
 }
 
-function escapeHtml(text) {
-  return String(text).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-}
-
-function updateQuickStats() {
-  todayPomodorosSpan.textContent = todayPomodoros;
-  streakDaysSpan.textContent = streakDays;
-}
-
-// Start
 init();
