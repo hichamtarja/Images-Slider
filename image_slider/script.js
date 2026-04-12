@@ -1,11 +1,5 @@
 /**
- * Image Slider Dashboard – Full Dynamic Image Rows
- * Features:
- * - Add/remove image rows in modal
- * - URL input or file upload (converted to data URL)
- * - Preview thumbnail updates live
- * - Edit existing sliders with full control over images
- * - Opens widget at image_slider_widget/index.html?id=...
+ * Image Slider Dashboard – Robust Multi-Image Support
  */
 
 const WIDGET_LIST_KEY = "image_slider_list";
@@ -61,12 +55,10 @@ function createImageRow(imageUrl = '') {
   const row = document.createElement('div');
   row.className = 'image-row';
 
-  // Preview
   const preview = document.createElement('div');
   preview.className = 'image-preview';
   if (imageUrl) preview.style.backgroundImage = `url('${imageUrl}')`;
 
-  // URL input
   const urlInput = document.createElement('input');
   urlInput.type = 'text';
   urlInput.className = 'image-url-input';
@@ -76,13 +68,11 @@ function createImageRow(imageUrl = '') {
     preview.style.backgroundImage = `url('${urlInput.value}')`;
   });
 
-  // Hidden file input
   const fileInput = document.createElement('input');
   fileInput.type = 'file';
   fileInput.accept = 'image/*';
   fileInput.className = 'image-file-input';
 
-  // Upload button
   const uploadBtn = document.createElement('button');
   uploadBtn.type = 'button';
   uploadBtn.className = 'image-file-btn';
@@ -102,7 +92,6 @@ function createImageRow(imageUrl = '') {
     reader.readAsDataURL(file);
   });
 
-  // Remove button
   const removeBtn = document.createElement('button');
   removeBtn.type = 'button';
   removeBtn.className = 'remove-image-btn';
@@ -127,9 +116,13 @@ function setImageRows(urls = ['']) {
 
 function getImageUrlsFromRows() {
   const rows = imagesList.querySelectorAll('.image-row');
-  return Array.from(rows)
-    .map(row => row.querySelector('.image-url-input').value.trim())
-    .filter(url => url.length > 0);
+  const urls = [];
+  rows.forEach(row => {
+    const input = row.querySelector('.image-url-input');
+    const url = input.value.trim();
+    if (url) urls.push(url);
+  });
+  return urls;
 }
 
 addImageBtn.addEventListener('click', () => {
@@ -204,7 +197,7 @@ function escapeHtml(text) {
 }
 
 function attachCardEvents() {
-  // Open widget – uses relative path to nested widget folder
+  // Open widget
   document.querySelectorAll('[data-open]').forEach(btn => {
     btn.addEventListener('click', () => {
       const id = btn.dataset.open;
@@ -212,7 +205,7 @@ function attachCardEvents() {
     });
   });
 
-  // Copy link – generates absolute URL
+  // Copy link
   document.querySelectorAll('[data-copy]').forEach(btn => {
     btn.addEventListener('click', async () => {
       const id = btn.dataset.copy;
@@ -276,6 +269,11 @@ widgetForm.addEventListener('submit', (e) => {
   if (!title) return;
 
   const images = getImageUrlsFromRows();
+  if (images.length === 0) {
+    alert('Please add at least one image URL or upload.');
+    return;
+  }
+
   const widgets = getWidgetList();
 
   if (editingId) {
