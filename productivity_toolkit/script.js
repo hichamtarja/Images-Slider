@@ -97,6 +97,13 @@ const decryptBtn = document.getElementById('decryptBtn');
 const decryptedOutput = document.getElementById('decryptedOutput');
 const copyDecryptedBtn = document.getElementById('copyDecryptedBtn');
 
+// Encryption elements (add to existing list)
+const clearEncryptionBtn = document.getElementById('clearEncryptionBtn');
+const fileInput = document.getElementById('fileInput');
+const filePassword = document.getElementById('filePassword');
+const encryptFileBtn = document.getElementById('encryptFileBtn');
+const decryptFileBtn = document.getElementById('decryptFileBtn');
+
 // Import/Export
 const exportBookmarksBtn = document.getElementById('exportBookmarksBtn');
 const importBookmarksBtn = document.getElementById('importBookmarksBtn');
@@ -736,6 +743,133 @@ copyCiphertextBtn.addEventListener('click', () => {
 copyDecryptedBtn.addEventListener('click', () => {
   navigator.clipboard.writeText(decryptedOutput.value);
   alert('Copied!');
+});
+
+// =============================================
+// ENCRYPTION RESET
+// =============================================
+clearEncryptionBtn.addEventListener('click', () => {
+  // Clear text encrypt fields
+  plaintextInput.value = '';
+  encryptPassword.value = '';
+  ciphertextOutput.value = '';
+  // Clear text decrypt fields
+  ciphertextInput.value = '';
+  decryptPassword.value = '';
+  decryptedOutput.value = '';
+  // Clear file fields
+  fileInput.value = '';
+  filePassword.value = '';
+});
+
+// =============================================
+// FILE ENCRYPTION / DECRYPTION
+// =============================================
+
+// Helper to read file as ArrayBuffer
+function readFileAsBuffer(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsArrayBuffer(file);
+  });
+}
+
+// Encrypt file
+encryptFileBtn.addEventListener('click', async () => {
+  const file = fileInput.files[0];
+  const password = filePassword.value;
+  if (!file || !password) {
+    alert('Select a file and enter a password.');
+    return;
+  }
+
+  try {
+    const fileData = await readFileAsBuffer(file);
+    const encoder = new TextEncoder();
+    
+    // Derive key
+    const salt = crypto.getRandomValues(new Uint8Array(16));
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    const keyMaterial = await crypto.subtle.importKey(
+      'raw', encoder.encode(password), { name: 'PBKDF2' }, false, ['deriveKey']
+    );
+    const key = await crypto.subtle.deriveKey(
+      { name: 'PBKDF2', salt, iterations: 100000, hash: 'SHA-256' },
+      keyMaterial, { name: 'AES-GCM', length: 256 }, false, ['encrypt']
+    );
+
+    // Encrypt
+    const encrypted = await crypto.subtle.encrypt(
+      { name: 'AES-GCM', iv }, key, fileData
+    );
+
+    // Combine: salt (16) + iv (12) + ciphertext
+    const combined = new Uint8Array(salt.length + iv.length + encrypted.byteLength);
+    combined.set(salt, 0);
+    combined.set(iv, salt.length);
+    combined.set(new Uint8Array(encrypted), salt.length + iv.length);
+
+    // Download
+    const blob = new Blob([combined], { type: 'application/octet-stream' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = file.name + '.enc';
+    a.click();
+    URL.revokeObjectURL(url);
+  } catch (e) {
+    alert('Encryption failed: ' + e.message);
+  }
+});
+
+// Decrypt file
+decryptFileBtn.addEventListener('click', async () => {
+  const file = fileInput.files[0];
+  const password = filePassword.value;
+  if (!file || !password) {
+    alert('Select an encrypted (.enc) file and enter the password.');
+    return;
+  }
+
+  try {
+    const fileData = await readFileAsBuffer(file);
+    const data = new Uint8Array(fileData);
+    
+    // Extract salt, iv, ciphertext
+    if (data.length < 28) throw new Error('File too small');
+    const salt = data.slice(0, 16);
+    const iv = data.slice(16, 28);
+    const ciphertext = data.slice(28);
+
+    const encoder = new TextEncoder();
+    const keyMaterial = await crypto.subtle.importKey(
+      'raw', encoder.encode(password), { name: 'PBKDF2' }, false, ['deriveKey']
+    );
+    const key = await crypto.subtle.deriveKey(
+      { name: 'PBKDF2', salt, iterations: 100000, hash: 'SHA-256' },
+      keyMaterial, { name: 'AES-GCM', length: 256 }, false, ['decrypt']
+    );
+
+    const decrypted = await crypto.subtle.decrypt(
+      { name: 'AES-GCM', iv }, key, ciphertext
+    );
+
+    // Guess original filename (remove .enc if present)
+    let originalName = file.name;
+    if (originalName.endsWith('.enc')) originalName = originalName.slice(0, -4);
+
+    const blob = new Blob([decrypted]);
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = originalName;
+    a.click();
+    URL.revokeObjectURL(url);
+  } catch (e) {
+    alert('Decryption failed. Wrong password or corrupted file.');
+  }
 });
 
 // =============================================
