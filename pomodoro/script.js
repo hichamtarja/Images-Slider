@@ -18,7 +18,7 @@ let pendingPartialElapsed = 0;
 let extraTimeSeconds = 0;
 let extraTimeInterval = null;
 let isExtraTimeRunning = false;
-let extraTimeSessionId = null; // ID of session that just ended
+let extraTimeSessionId = null;
 
 let sharedAudioCtx = null;
 
@@ -27,6 +27,7 @@ let halfPomodoros = 0;
 let streakDays = 0;
 let lastActiveDate = null;
 let sessionsHistory = [];
+let extraTimeHistory = []; // separate log for extra time periods
 let tasks = [];
 let activeTaskId = null;
 let showCompleted = true;
@@ -42,11 +43,11 @@ let settings = {
   desktopNotify: true,
   fullscreenBreak: false,
   fullscreenWork: false,
-  accentColor: '#e53935',       // changed to red
+  accentColor: '#e53935',
   logSkipped: true,
   tickingSound: false,
   taskCompleteSound: true,
-  trackExtraTime: true          // new
+  trackExtraTime: true
 };
 
 const quotes = [ /* ... same ... */ ];
@@ -55,7 +56,6 @@ const workQuotes = [ /* ... same ... */ ];
 let statsChart = null;
 let currentChartTab = 'daily';
 
-// Helper to get element safely
 function $(id) { return document.getElementById(id); }
 
 // DOM Elements
@@ -82,8 +82,8 @@ const toggleCompletedBtn = $('toggle-completed-btn');
 
 const settingsModal = $('settings-modal');
 const taskModal = $('task-modal');
-const taskDetailModal = $('task-detail-modal'); // new
-const taskDetailBody = $('task-detail-body');   // new
+const taskDetailModal = $('task-detail-modal');
+const taskDetailBody = $('task-detail-body');
 const interruptModal = $('interrupt-modal');
 const breakOverlay = $('break-overlay');
 const workOverlay = $('work-overlay');
@@ -95,7 +95,6 @@ const partialResetOption = $('partial-reset-option');
 const partialCompleteOption = $('partial-complete-option');
 const partialTaskModal = $('partial-task-modal');
 
-// Extra time elements
 const extraTimeContainer = $('extra-time-container');
 const extraTimeDisplay = $('extra-time-display');
 
@@ -114,7 +113,7 @@ const setFullscreenWork = $('set-fullscreen-work');
 const setLogSkipped = $('set-log-skipped');
 const setTickingSound = $('set-ticking-sound');
 const setTaskCompleteSound = $('set-task-complete-sound');
-const setTrackExtraTime = $('set-extra-time'); // new
+const setTrackExtraTime = $('set-extra-time');
 const saveSettingsBtn = $('save-settings-btn');
 
 const workValue = $('work-value');
@@ -151,7 +150,7 @@ function escapeHtml(text) {
   })[c]);
 }
 
-// ======================== THEME (dark default) ========================
+// ======================== THEME ========================
 function initTheme() {
   const savedTheme = localStorage.getItem('pomodoro_theme') || 'dark';
   document.body.classList.toggle('light-mode', savedTheme === 'light');
@@ -174,6 +173,7 @@ function loadFromStorage() {
       settings = data.settings || settings;
       tasks = data.tasks || [];
       sessionsHistory = data.sessions || [];
+      extraTimeHistory = data.extraTimeHistory || [];
       todayPomodoros = data.todayPomodoros || 0;
       halfPomodoros = data.halfPomodoros || 0;
       streakDays = data.streakDays || 0;
@@ -189,7 +189,7 @@ function loadFromStorage() {
 }
 
 function saveToStorage() {
-  const data = { settings, tasks, sessions: sessionsHistory, todayPomodoros, halfPomodoros, streakDays, lastActiveDate, activeTaskId };
+  const data = { settings, tasks, sessions: sessionsHistory, extraTimeHistory, todayPomodoros, halfPomodoros, streakDays, lastActiveDate, activeTaskId };
   localStorage.setItem('pomodoro_suite', JSON.stringify(data));
 }
 
@@ -248,7 +248,7 @@ function initAudioContext() {
   }
 }
 
-// ======================== EXTRA TIME COUNTER ========================
+// ======================== EXTRA TIME (persistent) ========================
 function startExtraTime(sessionId) {
   if (!settings.trackExtraTime) return;
   stopExtraTime();
@@ -270,6 +270,23 @@ function stopExtraTime() {
   if (extraTimeContainer) extraTimeContainer.style.display = 'none';
 }
 
+function pauseExtraTime() {
+  // Pause without resetting display (used when modal opens)
+  if (extraTimeInterval) {
+    clearInterval(extraTimeInterval);
+    extraTimeInterval = null;
+  }
+}
+
+function resumeExtraTime() {
+  if (!isExtraTimeRunning || !settings.trackExtraTime) return;
+  if (extraTimeInterval) return;
+  extraTimeInterval = setInterval(() => {
+    extraTimeSeconds++;
+    updateExtraTimeDisplay();
+  }, 1000);
+}
+
 function updateExtraTimeDisplay() {
   if (!extraTimeDisplay) return;
   const mins = Math.floor(extraTimeSeconds / 60);
@@ -277,12 +294,22 @@ function updateExtraTimeDisplay() {
   extraTimeDisplay.textContent = `${mins}:${String(secs).padStart(2, '0')}`;
 }
 
-function applyExtraTimeToSession(sessionId) {
+function logExtraTimeAndReset() {
   if (extraTimeSeconds <= 0) return;
-  const session = sessionsHistory.find(s => s.id === sessionId);
+  // Log as separate entry
+  const session = sessionsHistory.find(s => s.id === extraTimeSessionId);
+  const extraEntry = {
+    id: Date.now().toString(),
+    type: 'extra',
+    duration: Math.floor(extraTimeSeconds / 60),
+    timestamp: new Date().toISOString(),
+    associatedSessionId: extraTimeSessionId,
+    taskName: session ? session.taskName : null
+  };
+  extraTimeHistory.push(extraEntry);
+  // Also attach to session for display
   if (session) {
     session.extraTime = extraTimeSeconds;
-    session.totalDuration = (session.duration * 60) + extraTimeSeconds;
   }
   stopExtraTime();
   saveToStorage();
@@ -335,7 +362,7 @@ function timerTick() {
 
 function startTimer() {
   if (isRunning) return;
-  stopExtraTime(); // user manually started, stop extra time counter
+  logExtraTimeAndReset(); // log any accumulated extra time before starting
   isRunning = true;
   if (startPauseBtn) startPauseBtn.textContent = 'Pause';
   if (logPartialContainer) logPartialContainer.style.display = 'none';
@@ -376,7 +403,7 @@ function stopTimer() {
 
 function resetTimer() {
   stopTimer();
-  stopExtraTime();
+  logExtraTimeAndReset();
   timeLeft = (currentSessionType === 'work' ? settings.workDuration : currentSessionType === 'shortBreak' ? settings.shortBreak : settings.longBreak) * 60;
   totalSessionTime = timeLeft;
   updateTimerDisplay();
@@ -426,13 +453,7 @@ function promptPartialTaskApplication(action, elapsed, isRemaining = false) {
   if (activeTaskId && !isRemaining) {
     if (partialTaskModal) partialTaskModal.style.display = 'flex';
   } else {
-    // No active task or is remaining (will be prompted later in completeSession)
-    if (isRemaining) {
-      // We'll store that we need to prompt after completion
-      pendingPartialAction = action;
-    } else {
-      applyPartialToTask('none');
-    }
+    applyPartialToTask('none');
   }
 }
 
@@ -458,6 +479,9 @@ function applyPartialToTask(option) {
     logPartialSessionAndReset();
   } else if (pendingPartialAction === 'complete') {
     setupPartialCompleteMode();
+  } else if (pendingPartialAction === 'assign-remaining') {
+    // Handled in completeSession flow
+    pendingPartialAction = null;
   }
 }
 
@@ -543,6 +567,19 @@ function completeSession(isSkipped = false) {
       };
       sessionsHistory.push(remainingSession);
       if (currentSessionType === 'work') halfPomodoros++;
+      
+      // Prompt to assign this half to task if active
+      if (activeTask) {
+        pendingPartialAction = 'assign-remaining';
+        if (partialTaskModal) partialTaskModal.style.display = 'flex';
+        saveToStorage();
+        renderHistoryList();
+        updateQuickStats();
+        // Store a reference to the session to attach option later
+        window._pendingRemainingSession = remainingSession;
+        window._pendingRemainingSeconds = remaining;
+        return; // wait for user choice
+      }
     }
     partialMode = null;
     partialElapsedLogged = false;
@@ -572,45 +609,30 @@ function completeSession(isSkipped = false) {
     }
   }
 
-  // Prompt to assign remaining portion to task if applicable
-  if (isHalf && activeTask && sessionId) {
-    // Show prompt for the remaining half session
-    pendingPartialAction = 'assign-remaining';
-    pendingPartialElapsed = timeLeft; // remaining seconds
-    if (partialTaskModal) partialTaskModal.style.display = 'flex';
-    // Override the apply function to handle this case
-    const originalApply = applyPartialToTask;
-    applyPartialToTask = (option) => {
-      if (option !== 'none') {
-        const task = tasks.find(t => t.id === activeTaskId);
-        if (task && !task.completed) {
-          if (option === 'half') {
-            task.completedPomodoros = Math.min(task.completedPomodoros + 0.5, task.estimatedPomodoros);
-          } else if (option === 'full') {
-            task.completedPomodoros = Math.min(task.completedPomodoros + 1, task.estimatedPomodoros);
-          }
-          if (task.completedPomodoros >= task.estimatedPomodoros) {
-            task.completed = true;
-            if (settings.taskCompleteSound) playTaskCompleteSound();
-            if (activeTaskId === task.id) activeTaskId = null;
-          }
-          saveToStorage();
-          renderTasks();
-        }
-      }
-      if (partialTaskModal) partialTaskModal.style.display = 'none';
-      applyPartialToTask = originalApply;
-      pendingPartialAction = null;
-    };
-    // Don't transition yet; wait for user choice
-    saveToStorage();
-    renderHistoryList();
-    updateQuickStats();
-    return; // pause here until user chooses
-  }
-
-  // Normal transition
   finalizeSessionTransition(isSkipped);
+}
+
+// This function is called after user chooses assignment for remaining half
+function applyRemainingTaskOption(option) {
+  const activeTask = activeTaskId ? tasks.find(t => t.id === activeTaskId) : null;
+  const session = window._pendingRemainingSession;
+  if (activeTask && session) {
+    if (option === 'half') {
+      activeTask.completedPomodoros = Math.min(activeTask.completedPomodoros + 0.5, activeTask.estimatedPomodoros);
+    } else if (option === 'full') {
+      activeTask.completedPomodoros = Math.min(activeTask.completedPomodoros + 1, activeTask.estimatedPomodoros);
+    }
+    if (activeTask.completedPomodoros >= activeTask.estimatedPomodoros) {
+      activeTask.completed = true;
+      if (settings.taskCompleteSound) playTaskCompleteSound();
+      if (activeTaskId === activeTask.id) activeTaskId = null;
+    }
+    saveToStorage();
+    renderTasks();
+  }
+  if (partialTaskModal) partialTaskModal.style.display = 'none';
+  window._pendingRemainingSession = null;
+  finalizeSessionTransition(false);
 }
 
 function finalizeSessionTransition(isSkipped) {
@@ -620,7 +642,6 @@ function finalizeSessionTransition(isSkipped) {
     quoteText.textContent = currentSessionType === 'work' ? `“${quotes[Math.floor(Math.random() * quotes.length)]}”` : `“${workQuotes[Math.floor(Math.random() * workQuotes.length)]}”`;
   }
 
-  // Determine next session
   if (currentSessionType === 'work') {
     sessionCount++;
     if (sessionCount > settings.longBreakInterval) {
@@ -650,7 +671,7 @@ function finalizeSessionTransition(isSkipped) {
   partialElapsedLogged = false;
   if (startPauseBtn) startPauseBtn.textContent = 'Start';
 
-  // Start extra time counter if auto-start is off and we just finished a work session
+  // Start extra time if auto-start off and we finished a work session
   if (!settings.autoStart && currentSessionType !== 'work' && sessionsHistory.length > 0) {
     const lastSession = sessionsHistory[sessionsHistory.length - 1];
     startExtraTime(lastSession.id);
@@ -771,7 +792,6 @@ function renderTaskItem(task, container, isCompleted = false) {
     renderTasks();
   });
   
-  // Click on task item (for active tasks: select; for completed: show detail)
   taskEl.addEventListener('click', (e) => {
     if (e.target.type === 'checkbox' || e.target.classList.contains('task-delete-btn') || e.target.classList.contains('task-edit-btn')) return;
     if (isCompleted) {
@@ -914,15 +934,23 @@ function updateChart(tab) {
 
 function renderHistoryList() {
   if (!historyListDiv) return;
-  historyListDiv.innerHTML = sessionsHistory.slice(-30).reverse().map((s, idx) => {
+  // Combine session and extra time history for display
+  const combined = [...sessionsHistory, ...extraTimeHistory].sort((a,b) => new Date(a.timestamp) - new Date(b.timestamp));
+  historyListDiv.innerHTML = combined.slice(-30).reverse().map((s, idx) => {
+    if (s.type === 'extra') {
+      return `<div class="history-item extra-time-item" data-extra-id="${s.id}">
+        <span>⏱️ Extra time · ${s.duration} min</span>
+        <span>${new Date(s.timestamp).toLocaleString()}</span>
+      </div>`;
+    }
     const displayType = s.taskName ? s.taskName : s.type;
     const halfMark = s.halfPomodoro ? ' ½' : '';
     const partialMark = s.partial ? ' ⏸️' : '';
     let durationText = `${s.duration} min`;
     if (s.extraTime) {
-      durationText = `${s.duration} min + ${Math.floor(s.extraTime / 60)} min (Extra time)`;
+      durationText = `${s.duration} min + ${Math.floor(s.extraTime / 60)} min (Extra)`;
     }
-    return `<div class="history-item" data-session-index="${sessionsHistory.length - 1 - idx}">
+    return `<div class="history-item" data-session-index="${sessionsHistory.indexOf(s)}">
       <span>${displayType} · ${durationText}${halfMark}${partialMark}</span>
       <span>${new Date(s.timestamp).toLocaleString()}</span>
     </div>`;
@@ -965,6 +993,27 @@ function init() {
   drawTimer(1);
   updateChart('daily');
   renderHistoryList();
+
+  // Pause extra time when modal opens, resume on close
+  const modals = [settingsModal, taskModal, taskDetailModal, interruptModal, sessionDetailModal, partialOptionsModal, partialTaskModal];
+  modals.forEach(m => {
+    if (m) {
+      m.addEventListener('show', () => pauseExtraTime()); // not standard, use MutationObserver or just rely on click handlers
+      m.addEventListener('click', (e) => {
+        if (e.target === m) {
+          m.style.display = 'none';
+          resumeExtraTime();
+        }
+      });
+    }
+  });
+  // Simple approach: pause extra time when any modal is displayed via style change
+  const observer = new MutationObserver(() => {
+    const anyOpen = modals.some(m => m && m.style.display === 'flex');
+    if (anyOpen) pauseExtraTime();
+    else resumeExtraTime();
+  });
+  modals.forEach(m => m && observer.observe(m, { attributes: true, attributeFilter: ['style'] }));
 
   if (startPauseBtn) startPauseBtn.addEventListener('click', () => isRunning ? pauseTimer() : handleResume());
   if (resetBtn) resetBtn.addEventListener('click', resetTimer);
@@ -1015,6 +1064,7 @@ function init() {
     if (sessionDetailModal) sessionDetailModal.style.display = 'none';
     if (partialOptionsModal) partialOptionsModal.style.display = 'none';
     if (partialTaskModal) partialTaskModal.style.display = 'none';
+    resumeExtraTime();
   }));
   window.addEventListener('click', e => { if (e.target.classList.contains('modal')) e.target.style.display = 'none'; });
 
@@ -1056,9 +1106,27 @@ function init() {
     promptPartialTaskApplication('complete', elapsed);
   });
 
-  $('partial-half-btn')?.addEventListener('click', () => applyPartialToTask('half'));
-  $('partial-full-btn')?.addEventListener('click', () => applyPartialToTask('full'));
-  $('partial-none-btn')?.addEventListener('click', () => applyPartialToTask('none'));
+  $('partial-half-btn')?.addEventListener('click', () => {
+    if (pendingPartialAction === 'assign-remaining') {
+      applyRemainingTaskOption('half');
+    } else {
+      applyPartialToTask('half');
+    }
+  });
+  $('partial-full-btn')?.addEventListener('click', () => {
+    if (pendingPartialAction === 'assign-remaining') {
+      applyRemainingTaskOption('full');
+    } else {
+      applyPartialToTask('full');
+    }
+  });
+  $('partial-none-btn')?.addEventListener('click', () => {
+    if (pendingPartialAction === 'assign-remaining') {
+      applyRemainingTaskOption('none');
+    } else {
+      applyPartialToTask('none');
+    }
+  });
 
   $('close-break-overlay')?.addEventListener('click', () => { if (breakOverlay) breakOverlay.style.display = 'none'; });
   $('close-work-overlay')?.addEventListener('click', () => { if (workOverlay) workOverlay.style.display = 'none'; });
@@ -1081,6 +1149,7 @@ function init() {
   if (exportDataBtn) exportDataBtn.addEventListener('click', () => {
     let csv = "Type,Duration,Timestamp,Task,Partial,Half,ExtraTime\n";
     sessionsHistory.forEach(s => csv += `${s.type},${s.duration},${s.timestamp},${s.taskName || ''},${s.partial ? 'Yes' : 'No'},${s.halfPomodoro ? 'Yes' : 'No'},${s.extraTime || 0}\n`);
+    extraTimeHistory.forEach(e => csv += `extra,${e.duration},${e.timestamp},${e.taskName || ''},No,No,0\n`);
     const blob = new Blob([csv], { type: 'text/csv' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
@@ -1091,8 +1160,17 @@ function init() {
   if (historyListDiv) historyListDiv.addEventListener('click', (e) => {
     const item = e.target.closest('.history-item');
     if (item) {
-      const idx = parseInt(item.dataset.sessionIndex);
-      if (!isNaN(idx) && sessionsHistory[idx]) showSessionDetail(sessionsHistory[idx]);
+      if (item.classList.contains('extra-time-item')) {
+        const id = item.dataset.extraId;
+        const extra = extraTimeHistory.find(e => e.id === id);
+        if (extra) {
+          // Show simple detail
+          alert(`Extra time: ${extra.duration} min\n${new Date(extra.timestamp).toLocaleString()}`);
+        }
+      } else {
+        const idx = parseInt(item.dataset.sessionIndex);
+        if (!isNaN(idx) && sessionsHistory[idx]) showSessionDetail(sessionsHistory[idx]);
+      }
     }
   });
 
