@@ -8,6 +8,7 @@
   <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
   <!-- QR Code library -->
   <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -155,6 +156,37 @@
         </div>
       </section>
     </div>
+  </div>
+
+  <!-- New row: QR Scanner -->
+  <div class="row">
+    <section class="panel panel-full" id="scanner-panel">
+      <div class="panel-header">
+        <h2>📷 QR Scanner</h2>
+      </div>
+      <div class="scanner-container">
+        <div class="scanner-modes">
+          <button id="cameraScanBtn" class="btn btn-primary">📸 Scan from Camera</button>
+          <button id="uploadScanBtn" class="btn btn-outline">📁 Upload Image</button>
+          <input type="file" id="qrImageUpload" accept="image/*" style="display:none">
+        </div>
+        
+        <div id="cameraView" class="camera-view hidden">
+          <video id="qrVideo" autoplay playsinline></video>
+          <canvas id="qrCanvasScanner" style="display:none;"></canvas>
+          <button id="stopCameraBtn" class="btn btn-outline">Stop Camera</button>
+        </div>
+        
+        <div id="scanResult" class="scan-result hidden">
+          <span class="result-label">Decoded:</span>
+          <span id="decodedText" class="result-text"></span>
+          <div class="result-actions">
+            <button id="copyDecodedBtn" class="btn btn-small">📋 Copy</button>
+            <button id="openDecodedBtn" class="btn btn-small btn-primary">🔗 Open</button>
+          </div>
+        </div>
+      </div>
+    </section>
   </div>
 
   <script src="script.js"></script>
