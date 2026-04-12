@@ -359,7 +359,7 @@ function timerTick() {
 
 function startTimer() {
   if (isRunning) return;
-  resetExtraTime(); // clear extra time when timer starts
+  resetExtraTime();
   isRunning = true;
   if (startPauseBtn) startPauseBtn.textContent = 'Pause';
   if (logPartialContainer) logPartialContainer.style.display = 'none';
@@ -523,6 +523,7 @@ function setupPartialCompleteMode() {
     partialElapsedLogged = true;
     partialMode = 'complete';
     if (partialOptionsModal) partialOptionsModal.style.display = 'none';
+    // Resume timer to complete the remaining time
     startTimer();
   });
 }
@@ -559,13 +560,14 @@ function completeSession(isSkipped = false) {
         duration: Math.floor(remaining / 60),
         timestamp: sessionEndTime.toISOString(),
         taskName: (currentSessionType === 'work' && activeTask) ? activeTask.title : null,
-        interruptions: [],
+        interruptions: window.pendingInterruptions ? [...window.pendingInterruptions] : [],
         partial: true,
         halfPomodoro: true,
         extraTime: 0
       };
       sessionsHistory.push(remainingSession);
       if (currentSessionType === 'work') halfPomodoros++;
+      window.pendingInterruptions = [];
       
       // Prompt to assign this half to task if active
       if (activeTask) {
@@ -588,10 +590,11 @@ function completeSession(isSkipped = false) {
       duration: totalSessionTime / 60,
       timestamp: sessionEndTime.toISOString(),
       taskName: (currentSessionType === 'work' && activeTask) ? activeTask.title : null,
-      interruptions: [],
+      interruptions: window.pendingInterruptions ? [...window.pendingInterruptions] : [],
       extraTime: extra
     };
     sessionsHistory.push(session);
+    window.pendingInterruptions = [];
   }
 
   if (currentSessionType === 'work' && !isSkipped && !isHalf) {
@@ -1038,7 +1041,7 @@ function init() {
     saveToStorage();
     if (settingsModal) settingsModal.style.display = 'none';
     updateChart(currentChartTab);
-    // Extra time persists; do NOT reset
+    // Extra time persists
   });
 
   document.querySelectorAll('.close-modal').forEach(btn => btn.addEventListener('click', () => {
