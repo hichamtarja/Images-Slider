@@ -9,24 +9,21 @@
 </head>
 <body>
   <div class="app-wrapper">
-    <!-- Focus Mode Exit Button (hidden by default) -->
     <button id="exit-focus-mode" class="exit-focus-btn" style="display: none;" title="Exit Focus Mode">✕</button>
     
-    <!-- Header -->
     <header class="app-header">
       <div class="logo">
         <span class="logo-icon">🍅</span>
         <h1>Pomodoro Flow</h1>
       </div>
       <div class="header-actions">
+        <button id="theme-toggle" class="icon-btn" title="Toggle Light/Dark Mode">🌙</button>
         <button id="focus-mode-toggle" class="icon-btn" title="Focus Mode">🧘</button>
         <button id="settings-toggle" class="icon-btn" title="Settings">⚙️</button>
       </div>
     </header>
 
-    <!-- Main Grid -->
     <div class="main-grid">
-      <!-- Left Column: Timer + Progress -->
       <section class="timer-section">
         <div class="timer-card glass" id="timer-card">
           <div class="session-indicator">
@@ -34,7 +31,6 @@
             <span id="session-counter">1 / 4</span>
           </div>
 
-          <!-- Circular Progress Timer -->
           <div class="circular-timer">
             <canvas id="timer-canvas" width="300" height="300"></canvas>
             <div class="timer-display">
@@ -42,14 +38,17 @@
             </div>
           </div>
 
-          <!-- Controls -->
           <div class="timer-controls">
             <button id="timer-start-pause" class="primary-btn">Start</button>
             <button id="timer-reset" class="secondary-btn">Reset</button>
             <button id="timer-skip" class="secondary-btn">Skip</button>
           </div>
 
-          <!-- Auto-start toggle -->
+          <!-- New: Log partial session button (visible when paused) -->
+          <div id="log-partial-container" style="display: none; margin-top: 10px;">
+            <button id="log-partial-btn" class="small-btn">📝 Log current progress</button>
+          </div>
+
           <div class="auto-start-row">
             <label class="checkbox-label">
               <input type="checkbox" id="auto-start-checkbox"> Auto‑start next
@@ -57,7 +56,6 @@
             </label>
           </div>
 
-          <!-- Stats at a glance -->
           <div class="quick-stats">
             <div class="stat-item">
               <span class="stat-value" id="today-pomodoros">0</span>
@@ -72,31 +70,25 @@
             </div>
           </div>
 
-          <!-- Quote / Tip -->
           <div id="quote-container" class="quote-box">
             <p id="quote-text">Stay focused, you're doing great.</p>
           </div>
         </div>
       </section>
 
-      <!-- Right Column: Tasks -->
       <section class="tasks-section">
         <div class="tasks-card glass">
           <div class="section-header">
             <h2>📋 Tasks</h2>
             <button id="add-task-btn" class="icon-btn">+ New</button>
           </div>
-          <div id="tasks-list" class="tasks-list">
-            <!-- Active tasks -->
-          </div>
+          <div id="tasks-list" class="tasks-list"></div>
           <div class="completed-section">
             <div class="section-header">
               <h3>✅ Completed</h3>
               <button id="toggle-completed-btn" class="icon-btn small">▼</button>
             </div>
-            <div id="completed-tasks-list" class="tasks-list completed-list">
-              <!-- Completed tasks -->
-            </div>
+            <div id="completed-tasks-list" class="tasks-list completed-list"></div>
           </div>
           <div class="task-footer">
             <span id="tasks-completed-count">0/0 completed</span>
@@ -104,12 +96,12 @@
         </div>
       </section>
 
-      <!-- Bottom Section: Statistics & History -->
       <section class="stats-section glass">
         <div class="stats-tabs">
           <button class="tab-btn active" data-tab="daily">Daily</button>
           <button class="tab-btn" data-tab="weekly">Weekly</button>
           <button class="tab-btn" data-tab="monthly">Monthly</button>
+          <button class="tab-btn" data-tab="tasks">Tasks</button>
           <button class="tab-btn" data-tab="history">History</button>
         </div>
 
@@ -167,6 +159,19 @@
               <option value="gentle">Gentle</option>
             </select>
           </div>
+          <!-- New settings -->
+          <div class="setting-group checkbox">
+            <label class="checkbox-label">
+              <input type="checkbox" id="set-log-skipped"> Log skipped sessions
+              <span class="checkmark"></span>
+            </label>
+          </div>
+          <div class="setting-group checkbox">
+            <label class="checkbox-label">
+              <input type="checkbox" id="set-ticking-sound"> Ticking sound in last 10s
+              <span class="checkmark"></span>
+            </label>
+          </div>
           <div class="setting-group checkbox">
             <label class="checkbox-label">
               <input type="checkbox" id="set-voice"> Voice announcements
@@ -198,7 +203,7 @@
       </div>
     </div>
 
-    <!-- Task Edit Modal -->
+    <!-- Task Edit Modal (Delete button removed; deletion now via X on task item) -->
     <div id="task-modal" class="modal">
       <div class="modal-content glass">
         <div class="modal-header">
@@ -222,12 +227,11 @@
         </div>
         <div class="modal-footer">
           <button id="save-task-btn" class="primary-btn">Save</button>
-          <button id="delete-task-btn" class="danger-btn">Delete</button>
         </div>
       </div>
     </div>
 
-    <!-- Interruption Reason Modal -->
+    <!-- Interruption Modal -->
     <div id="interrupt-modal" class="modal">
       <div class="modal-content glass">
         <div class="modal-header">
@@ -242,6 +246,19 @@
         </div>
         <div class="modal-footer">
           <button id="save-interrupt-btn" class="primary-btn">Log</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Session Detail Modal (for viewing interruptions) -->
+    <div id="session-detail-modal" class="modal">
+      <div class="modal-content glass">
+        <div class="modal-header">
+          <h2>Session Details</h2>
+          <button class="close-modal">&times;</button>
+        </div>
+        <div class="modal-body" id="session-detail-body">
+          <!-- filled dynamically -->
         </div>
       </div>
     </div>
