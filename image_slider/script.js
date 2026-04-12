@@ -1,6 +1,10 @@
 /**
- * Image Slider Dashboard
- * Manages multiple slider widgets (title + image URLs)
+ * Image Slider Dashboard – Full Dynamic Image Rows
+ * Features:
+ * - Add/remove image rows in modal
+ * - URL input or file upload (converted to data URL)
+ * - Preview thumbnail updates live
+ * - Edit existing sliders with full control over images
  */
 
 const WIDGET_LIST_KEY = "image_slider_list";
@@ -22,7 +26,8 @@ const modalTitle = document.getElementById('modal-title');
 const widgetForm = document.getElementById('widget-form');
 const widgetIdInput = document.getElementById('widget-id');
 const widgetTitleInput = document.getElementById('widget-title-input');
-const widgetImagesInput = document.getElementById('widget-images-input');
+const imagesList = document.getElementById('images-list');
+const addImageBtn = document.getElementById('add-image-btn');
 const modalCancel = document.getElementById('modal-cancel');
 
 const confirmModal = document.getElementById('confirm-modal');
@@ -49,7 +54,89 @@ function generateId(title) {
 }
 
 // =============================================
-// RENDER
+// DYNAMIC IMAGE ROWS
+// =============================================
+function createImageRow(imageUrl = '') {
+  const row = document.createElement('div');
+  row.className = 'image-row';
+
+  // Preview
+  const preview = document.createElement('div');
+  preview.className = 'image-preview';
+  if (imageUrl) preview.style.backgroundImage = `url('${imageUrl}')`;
+
+  // URL input
+  const urlInput = document.createElement('input');
+  urlInput.type = 'text';
+  urlInput.className = 'image-url-input';
+  urlInput.placeholder = 'https://... or upload a file';
+  urlInput.value = imageUrl;
+  urlInput.addEventListener('input', () => {
+    preview.style.backgroundImage = `url('${urlInput.value}')`;
+  });
+
+  // Hidden file input
+  const fileInput = document.createElement('input');
+  fileInput.type = 'file';
+  fileInput.accept = 'image/*';
+  fileInput.className = 'image-file-input';
+
+  // Upload button
+  const uploadBtn = document.createElement('button');
+  uploadBtn.type = 'button';
+  uploadBtn.className = 'image-file-btn';
+  uploadBtn.textContent = '📁';
+  uploadBtn.title = 'Upload image';
+  uploadBtn.addEventListener('click', () => fileInput.click());
+
+  fileInput.addEventListener('change', () => {
+    const file = fileInput.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const dataUrl = e.target.result;
+      urlInput.value = dataUrl;
+      preview.style.backgroundImage = `url('${dataUrl}')`;
+    };
+    reader.readAsDataURL(file);
+  });
+
+  // Remove button
+  const removeBtn = document.createElement('button');
+  removeBtn.type = 'button';
+  removeBtn.className = 'remove-image-btn';
+  removeBtn.textContent = '✕';
+  removeBtn.title = 'Remove image';
+  removeBtn.addEventListener('click', () => row.remove());
+
+  row.appendChild(preview);
+  row.appendChild(urlInput);
+  row.appendChild(uploadBtn);
+  row.appendChild(fileInput);
+  row.appendChild(removeBtn);
+
+  return row;
+}
+
+function setImageRows(urls = ['']) {
+  imagesList.innerHTML = '';
+  if (urls.length === 0) urls = [''];
+  urls.forEach(url => imagesList.appendChild(createImageRow(url)));
+}
+
+function getImageUrlsFromRows() {
+  const rows = imagesList.querySelectorAll('.image-row');
+  return Array.from(rows)
+    .map(row => row.querySelector('.image-url-input').value.trim())
+    .filter(url => url.length > 0);
+}
+
+addImageBtn.addEventListener('click', () => {
+  imagesList.appendChild(createImageRow(''));
+});
+
+// =============================================
+// RENDER DASHBOARD
 // =============================================
 function updateStats(widgets) {
   totalWidgetsEl.textContent = widgets.length;
@@ -144,7 +231,7 @@ function attachCardEvents() {
       modalTitle.textContent = 'Edit Slider';
       widgetIdInput.value = widget.id;
       widgetTitleInput.value = widget.title;
-      widgetImagesInput.value = (widget.images || []).join('\n');
+      setImageRows(widget.images && widget.images.length ? widget.images : ['']);
       widgetModal.classList.remove('hidden');
     });
   });
@@ -168,6 +255,7 @@ createBtn.addEventListener('click', () => {
   modalTitle.textContent = 'Create New Slider';
   widgetForm.reset();
   widgetIdInput.value = '';
+  setImageRows(['']);
   widgetModal.classList.remove('hidden');
 });
 
@@ -176,15 +264,17 @@ modalCancel.addEventListener('click', () => widgetModal.classList.add('hidden'))
 widgetForm.addEventListener('submit', (e) => {
   e.preventDefault();
   const title = widgetTitleInput.value.trim();
-  const imagesText = widgetImagesInput.value.trim();
   if (!title) return;
 
-  const images = imagesText.split('\n').map(line => line.trim()).filter(url => url.length > 0 && (url.startsWith('http://') || url.startsWith('https://')));
+  const images = getImageUrlsFromRows();
   const widgets = getWidgetList();
 
   if (editingId) {
     const widget = widgets.find(w => w.id === editingId);
-    if (widget) { widget.title = title; widget.images = images; }
+    if (widget) {
+      widget.title = title;
+      widget.images = images;
+    }
   } else {
     const id = generateId(title);
     widgets.push({ id, title, images });
@@ -249,83 +339,5 @@ importFileInput.addEventListener('change', (e) => {
   importFileInput.value = '';
 });
 
-/* Wider modal for image list */
-.modal-wide {
-  max-width: 700px !important;
-  width: 95%;
-}
-
-.images-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  margin-bottom: 12px;
-  max-height: 300px;
-  overflow-y: auto;
-  padding-right: 4px;
-}
-
-.image-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background: rgba(0,0,0,0.2);
-  padding: 10px;
-  border-radius: 12px;
-  border: 1px solid var(--border-light);
-}
-
-.image-url-input {
-  flex: 1;
-  min-width: 0;
-}
-
-.image-file-input {
-  display: none;
-}
-
-.image-file-btn {
-  background: rgba(255,255,255,0.1);
-  border: 1px solid var(--border-light);
-  border-radius: 8px;
-  padding: 8px 12px;
-  color: var(--text-primary);
-  cursor: pointer;
-  font-size: 1.1rem;
-  white-space: nowrap;
-}
-.image-file-btn:hover {
-  background: rgba(0,212,255,0.2);
-}
-
-.remove-image-btn {
-  background: transparent;
-  border: none;
-  color: var(--text-secondary);
-  font-size: 1.2rem;
-  cursor: pointer;
-  padding: 4px 8px;
-  border-radius: 8px;
-}
-.remove-image-btn:hover {
-  background: rgba(239,68,68,0.2);
-  color: var(--danger);
-}
-
-.image-preview {
-  width: 40px;
-  height: 40px;
-  border-radius: 8px;
-  background-size: cover;
-  background-position: center;
-  background-color: #2a2a2a;
-  border: 1px solid var(--border-light);
-  flex-shrink: 0;
-}
-
-.add-image-btn {
-  width: 100%;
-  margin-top: 4px;
-}
 // Init
 renderDashboard();
