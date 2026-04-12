@@ -25,8 +25,8 @@ body {
   padding: 45px 50px;
   position: relative;
   box-sizing: border-box;
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  transition: background 0.3s;
+  /* NO BORDER */
+  transition: background 0.3s, color 0.3s;
 }
 
 .back-btn {
@@ -95,47 +95,77 @@ button:hover {
   min-width: 200px;
   display: block;
 }
-#reset-btn {
-  margin: 20px 0 0 auto;
-  background: #333;
-  box-shadow: none;
-  padding: 8px 20px;
-  font-size: 14px;
-}
 
 /* ===== COUNTER HEADER ===== */
 .counter-header {
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 15px;
+  justify-content: space-between;
   margin-bottom: 15px;
 }
 #display-title {
   font-size: 2.2rem;
   margin: 0;
-  text-align: center;
+  text-align: left;
   cursor: pointer;
 }
 #display-title:hover { opacity: 0.7; }
-.icon-btn {
-  background: rgba(255,255,255,0.1);
-  border: 1px solid rgba(255,255,255,0.2);
-  border-radius: 50%;
-  width: 44px;
-  height: 44px;
-  font-size: 1.5rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.2s;
-  box-shadow: none;
-  padding: 0;
+
+/* Three-dot menu */
+.menu-wrapper {
+  position: relative;
 }
-.icon-btn:hover {
-  background: rgba(255,255,255,0.2);
-  transform: scale(1.05);
+.menu-btn {
+  background: transparent;
+  border: none;
+  color: inherit;
+  font-size: 2rem;
+  padding: 0 8px;
+  cursor: pointer;
+  box-shadow: none;
+  background: none;
+  line-height: 1;
+}
+.menu-btn:hover {
+  background: rgba(255,255,255,0.1);
+  border-radius: 8px;
+  transform: none;
+  box-shadow: none;
+  filter: none;
+}
+.menu-dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  background: #2a2a2a;
+  border-radius: 16px;
+  padding: 8px 0;
+  min-width: 140px;
+  z-index: 100;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.5);
+}
+.menu-item {
+  display: block;
+  width: 100%;
+  padding: 10px 16px;
+  background: transparent;
+  border: none;
+  color: white;
+  text-align: left;
+  cursor: pointer;
+  font-size: 1rem;
+  box-shadow: none;
+  border-radius: 0;
+  margin: 0;
+}
+.menu-item:hover {
+  background: rgba(255,255,255,0.1);
+  transform: none;
+  box-shadow: none;
+  filter: none;
+}
+.reset-item {
+  color: #ef4444;
 }
 
 /* ===== COUNTDOWN PANEL ===== */
@@ -209,7 +239,7 @@ button:hover {
   z-index: 10;
 }
 
-/* ===== FLAGS & PINS (unchanged) ===== */
+/* ===== FLAGS & PINS ===== */
 .flag {
   position: absolute;
   top: -22px;
@@ -226,6 +256,7 @@ button:hover {
   font-size: 20px;
   pointer-events: auto;
   cursor: help;
+  color: var(--accent, #ff6a00);
 }
 .flag-start { left: 0%; }
 .flag-end { left: 100%; transform: translateX(-100%); }
@@ -273,6 +304,31 @@ button:hover {
   border: 2px solid rgba(255,255,255,0.3);
 }
 
+/* ===== TOOL BUTTONS (ICON-ONLY) ===== */
+.controls {
+  margin: 15px 0;
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.tool-btn {
+  padding: 10px 16px;
+  font-size: 1.4rem;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  box-shadow: none;
+  backdrop-filter: blur(4px);
+  border-radius: 40px;
+  line-height: 1;
+}
+.tool-btn:hover {
+  background: var(--accent, #ff6a00);
+  border-color: var(--accent, #ff6a00);
+  transform: scale(1.05);
+  box-shadow: 0 0 15px var(--accent, #ff6a00);
+}
+
 /* ===== QUOTE ===== */
 #display-quote {
   display: block;
@@ -297,18 +353,23 @@ button:hover {
   color: var(--accent, #ff6a00);
 }
 
-/* ===== CONTROLS ===== */
-.controls {
-  margin: 15px 0;
-  display: flex;
-  justify-content: center;
-  gap: 12px;
-  flex-wrap: wrap;
+/* ===== MILESTONE VIEW (ENHANCED) ===== */
+#milestone-view {
+  display: none;
+  margin: 30px 0 40px;
+  padding: 25px;
+  border-radius: 30px;
+  background: rgba(20, 20, 20, 0.8);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--accent, #ff6a00);
+  box-shadow: 0 0 25px rgba(0,0,0,0.5);
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s;
 }
-.controls button {
-  padding: 10px 18px;
-  font-size: 14px;
-  margin: 0;
+#milestone-view:hover {
+  transform: scale(1.01);
+  box-shadow: 0 0 35px var(--accent, #ff6a00);
 }
 
 /* ===== MODAL ===== */
