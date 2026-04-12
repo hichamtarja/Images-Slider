@@ -12,8 +12,8 @@ html, body {
 /* Slider container */
 .slider {
   position: relative;
-  width: 500px;
-  height: 300px;
+  width: 800px;
+  height: 500px;
   overflow: hidden;
   border-radius: 12px;
 }
