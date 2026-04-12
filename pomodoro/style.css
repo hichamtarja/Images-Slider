@@ -671,3 +671,10 @@ body.light-mode .fullscreen-overlay {
 .task-item.completed .task-edit-btn {
   display: none;
 }
+.task-item.completed {
+  pointer-events: none;  /* Prevent selection */
+  opacity: 0.7;
+}
+.task-item.completed .task-delete-btn {
+  pointer-events: auto;  /* Allow delete button to work */
+}
