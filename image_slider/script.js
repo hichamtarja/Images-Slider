@@ -5,7 +5,7 @@
  * - URL input or file upload (converted to data URL)
  * - Preview thumbnail updates live
  * - Edit existing sliders with full control over images
- * - Opens widget at ../image_slider_widget/index.html?id=...
+ * - Opens widget at image_slider_widget/index.html?id=...
  */
 
 const WIDGET_LIST_KEY = "image_slider_list";
@@ -204,19 +204,20 @@ function escapeHtml(text) {
 }
 
 function attachCardEvents() {
-  // Open widget
+  // Open widget – uses relative path to nested widget folder
   document.querySelectorAll('[data-open]').forEach(btn => {
     btn.addEventListener('click', () => {
       const id = btn.dataset.open;
-      window.location.href = `../image_slider_widget/index.html?id=${encodeURIComponent(id)}`;
+      window.location.href = `image_slider_widget/index.html?id=${encodeURIComponent(id)}`;
     });
   });
 
-  // Copy link
+  // Copy link – generates absolute URL
   document.querySelectorAll('[data-copy]').forEach(btn => {
     btn.addEventListener('click', async () => {
       const id = btn.dataset.copy;
-      const link = `${window.location.origin}/image_slider_widget/index.html?id=${encodeURIComponent(id)}`;
+      const base = window.location.origin + window.location.pathname.replace(/\/[^/]*$/, '');
+      const link = `${base}/image_slider_widget/index.html?id=${encodeURIComponent(id)}`;
       try {
         await navigator.clipboard.writeText(link);
         const original = btn.textContent;
