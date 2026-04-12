@@ -27,18 +27,6 @@ opacity: 0.75;
 margin-bottom: 25px;
 }
 
-/* Button */
-.primary-btn {
-padding: 12px 18px;
-border: none;
-border-radius: 12px;
-cursor: pointer;
-background: linear-gradient(135deg, #ff6a00, #ee0979);
-color: white;
-font-weight: bold;
-margin-bottom: 24px;
-}
-
 .home-btn {
   position: absolute;
   top: 15px;
@@ -50,6 +38,18 @@ margin-bottom: 24px;
 
 .home-btn:hover {
   color: white;
+}
+
+/* Button */
+.primary-btn {
+padding: 12px 18px;
+border: none;
+border-radius: 12px;
+cursor: pointer;
+background: linear-gradient(135deg, #ff6a00, #ee0979);
+color: white;
+font-weight: bold;
+margin-bottom: 24px;
 }
 
 /* Grid */
