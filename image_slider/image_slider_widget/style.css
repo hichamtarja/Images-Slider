@@ -1,16 +1,33 @@
-/* Clean, modern slider – no background changes, no outer shadow */
 html, body {
   margin: 0;
   padding: 0;
   height: 100%;
-  background: #191919;          /* kept as original */
+  background: #191919;
   display: flex;
   justify-content: center;
   align-items: center;
-  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  font-family: system-ui, sans-serif;
 }
 
-/* Slider container */
+.back-btn {
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  color: #888;
+  text-decoration: none;
+  font-size: 24px;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.05);
+  transition: all 0.2s;
+  z-index: 10;
+}
+.back-btn:hover { background: rgba(255,255,255,0.15); color: white; }
+
 .slider {
   position: relative;
   width: 600px;
@@ -18,153 +35,86 @@ html, body {
   aspect-ratio: 16 / 9;
   overflow: hidden;
   border-radius: 16px;
-  background: #1f1f1f;           /* subtle background for loading, no outer shadow */
+  background: #1f1f1f;
 }
-
-/* Slides container */
-.slides {
-  position: relative;
-  width: 100%;
-  height: 100%;
-}
-
-/* Images – smooth crossfade */
+.slides { position: relative; width: 100%; height: 100%; }
 .slides img {
   position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
   object-fit: cover;
   opacity: 0;
-  transition: opacity 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  transition: opacity 0.8s cubic-bezier(0.25,0.46,0.45,0.94);
   pointer-events: none;
 }
+.slides img.active { opacity: 1; pointer-events: auto; }
 
-.slides img.active {
-  opacity: 1;
-  pointer-events: auto;
-}
-
-/* Navigation buttons */
 .nav-btn {
   position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  background: rgba(20, 20, 20, 0.5);
+  top: 50%; transform: translateY(-50%);
+  background: rgba(20,20,20,0.5);
   backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
   color: white;
   border: none;
-  width: 44px;
-  height: 44px;
+  width: 44px; height: 44px;
   border-radius: 50%;
   font-size: 32px;
-  font-weight: 300;
-  line-height: 1;
-  cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.25s ease;
-  z-index: 5;
+  cursor: pointer;
   opacity: 0.7;
+  transition: all 0.25s;
+  z-index: 5;
 }
+.nav-btn:hover { background: rgba(60,60,60,0.7); opacity: 1; transform: translateY(-50%) scale(1.05); }
+.prev { left: 12px; }
+.next { right: 12px; }
 
-.nav-btn:hover {
-  background: rgba(60, 60, 60, 0.7);
-  opacity: 1;
-  transform: translateY(-50%) scale(1.05);
-}
-
-.prev {
-  left: 12px;
-}
-
-.next {
-  right: 12px;
-}
-
-/* Slide counter */
 .slider-counter {
   position: absolute;
-  bottom: 16px;
-  left: 16px;
-  background: rgba(20, 20, 20, 0.5);
+  bottom: 16px; left: 16px;
+  background: rgba(20,20,20,0.5);
   backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
   color: white;
   padding: 6px 14px;
   border-radius: 40px;
   font-size: 14px;
-  font-weight: 500;
-  letter-spacing: 0.5px;
   z-index: 5;
-  opacity: 0.8;
 }
 
-/* Dot indicators */
 .dots-container {
   position: absolute;
-  bottom: 16px;
-  right: 16px;
+  bottom: 16px; right: 16px;
   display: flex;
   gap: 8px;
-  z-index: 5;
-  background: rgba(20, 20, 20, 0.3);
+  background: rgba(20,20,20,0.3);
   backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
   padding: 8px 14px;
   border-radius: 40px;
+  z-index: 5;
 }
-
 .dot {
-  width: 10px;
-  height: 10px;
+  width: 10px; height: 10px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.4);
+  background: rgba(255,255,255,0.4);
   border: none;
-  padding: 0;
   cursor: pointer;
-  transition: all 0.25s ease;
+  transition: all 0.25s;
 }
+.dot:hover { background: rgba(255,255,255,0.7); transform: scale(1.2); }
+.dot.active { background: white; width: 24px; border-radius: 20px; }
 
-.dot:hover {
-  background: rgba(255, 255, 255, 0.7);
-  transform: scale(1.2);
+.error-message {
+  color: #ef4444;
+  font-size: 1.2rem;
 }
+.hidden { display: none !important; }
 
-.dot.active {
-  background: white;
-  width: 24px;
-  border-radius: 20px;
-  box-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
-}
-
-/* Responsive adjustments */
 @media (max-width: 480px) {
-  .nav-btn {
-    width: 36px;
-    height: 36px;
-    font-size: 28px;
-  }
-  .slider-counter {
-    padding: 4px 10px;
-    font-size: 12px;
-  }
-  .dots-container {
-    padding: 6px 10px;
-  }
-  .dot {
-    width: 8px;
-    height: 8px;
-  }
-  .dot.active {
-    width: 20px;
-  }
-}
-
-/* Pause auto-slide indicator (optional) – subtle */
-.slider:hover .nav-btn {
-  opacity: 1;
+  .nav-btn { width: 36px; height: 36px; font-size: 28px; }
+  .slider-counter { padding: 4px 10px; font-size: 12px; }
+  .dots-container { padding: 6px 10px; }
+  .dot { width: 8px; height: 8px; }
+  .dot.active { width: 20px; }
 }
