@@ -434,3 +434,127 @@ new Sortable(bookmarksContainer, {
     saveToStorage();
   }
 });
+
+// =============================================
+// QR SCANNER
+// =============================================
+const cameraScanBtn = document.getElementById('cameraScanBtn');
+const uploadScanBtn = document.getElementById('uploadScanBtn');
+const qrImageUpload = document.getElementById('qrImageUpload');
+const cameraView = document.getElementById('cameraView');
+const qrVideo = document.getElementById('qrVideo');
+const qrCanvasScanner = document.getElementById('qrCanvasScanner');
+const stopCameraBtn = document.getElementById('stopCameraBtn');
+const scanResult = document.getElementById('scanResult');
+const decodedTextSpan = document.getElementById('decodedText');
+const copyDecodedBtn = document.getElementById('copyDecodedBtn');
+const openDecodedBtn = document.getElementById('openDecodedBtn');
+
+let videoStream = null;
+let scanInterval = null;
+
+// Camera scanning
+cameraScanBtn.addEventListener('click', async () => {
+  try {
+    videoStream = await navigator.mediaDevices.getUserMedia({ 
+      video: { facingMode: 'environment' } 
+    });
+    qrVideo.srcObject = videoStream;
+    cameraView.classList.remove('hidden');
+    scanResult.classList.add('hidden');
+    
+    // Start scanning frames
+    scanInterval = setInterval(scanFromVideo, 500);
+  } catch (err) {
+    alert('Camera access denied or not available.');
+    console.error(err);
+  }
+});
+
+stopCameraBtn.addEventListener('click', () => {
+  if (videoStream) {
+    videoStream.getTracks().forEach(track => track.stop());
+    videoStream = null;
+  }
+  if (scanInterval) {
+    clearInterval(scanInterval);
+    scanInterval = null;
+  }
+  cameraView.classList.add('hidden');
+});
+
+function scanFromVideo() {
+  if (qrVideo.readyState !== qrVideo.HAVE_ENOUGH_DATA) return;
+  
+  const canvas = qrCanvasScanner;
+  const ctx = canvas.getContext('2d');
+  canvas.width = qrVideo.videoWidth;
+  canvas.height = qrVideo.videoHeight;
+  ctx.drawImage(qrVideo, 0, 0, canvas.width, canvas.height);
+  
+  const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  const code = jsQR(imageData.data, canvas.width, canvas.height);
+  
+  if (code) {
+    // Found QR code
+    displayScanResult(code.data);
+    stopCameraBtn.click(); // Stop scanning after success
+  }
+}
+
+// Image upload scanning
+uploadScanBtn.addEventListener('click', () => {
+  qrImageUpload.click();
+});
+
+qrImageUpload.addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  
+  const reader = new FileReader();
+  reader.onload = (event) => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      canvas.width = img.width;
+      canvas.height = img.height;
+      ctx.drawImage(img, 0, 0);
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const code = jsQR(imageData.data, canvas.width, canvas.height);
+      
+      if (code) {
+        displayScanResult(code.data);
+      } else {
+        alert('No QR code found in the image.');
+      }
+    };
+    img.src = event.target.result;
+  };
+  reader.readAsDataURL(file);
+  qrImageUpload.value = ''; // Allow re-upload of same file
+});
+
+function displayScanResult(text) {
+  decodedTextSpan.textContent = text;
+  scanResult.classList.remove('hidden');
+  
+  // Enable open button only if it looks like a URL
+  const isUrl = /^https?:\/\//i.test(text);
+  openDecodedBtn.disabled = !isUrl;
+}
+
+copyDecodedBtn.addEventListener('click', () => {
+  navigator.clipboard.writeText(decodedTextSpan.textContent);
+  alert('Copied to clipboard!');
+});
+
+openDecodedBtn.addEventListener('click', () => {
+  const text = decodedTextSpan.textContent;
+  if (/^https?:\/\//i.test(text)) {
+    window.open(text, '_blank');
+  } else {
+    // Try to prepend https://
+    window.open('https://' + text, '_blank');
+  }
+});
