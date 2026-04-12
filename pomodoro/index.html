@@ -26,6 +26,10 @@
     <div class="main-grid">
       <section class="timer-section">
         <div class="timer-card glass" id="timer-card">
+          <!-- Extra time counter (hidden by default) -->
+          <div id="extra-time-container" style="display: none; margin: 10px 0; font-size: 14px; opacity: 0.8;">
+            ⏱️ Extra time: <span id="extra-time-display">0:00</span>
+          </div>
           <div class="session-indicator">
             <span id="session-type-label">Work</span>
             <span id="session-counter">1 / 4</span>
@@ -161,6 +165,12 @@
             </select>
           </div>
           <!-- New settings -->
+          <div class="setting-group checkbox">
+            <label class="checkbox-label">
+              <input type="checkbox" id="set-extra-time"> Track extra time between sessions
+              <span class="checkmark"></span>
+            </label>
+          </div>
           <div class="setting-group checkbox">
             <label class="checkbox-label">
               <input type="checkbox" id="set-log-skipped"> Log skipped sessions
