@@ -1,26 +1,13 @@
 /**
- * Widget Hub Dashboard – Enhanced Edition
- * Features:
- * - Drag & Drop reordering (SortableJS)
- * - Persistent layout, theme, accent, notes, usage, last opened
- * - Category filters and sorting (most used, recent)
- * - Right‑click context menu
- * - Thumbnails (fallback to emoji)
- * - Greeting & clock
- * - Export / Import / Reset layout
- * - Editable notes per widget
- * - Usage heatmap sparkline & last opened timestamp
- * - Optional sound effects (extended)
- * - Floating emojis (parallax + hover)
- * - Collapsible controls menu (•••)
- * - Activity badges (HEAD request)
+ * Widget Hub Dashboard – Fully Persistent Edition
+ * All preferences (theme, accent, order, notes, usage, last opened, sound)
+ * are saved to localStorage and restored on page reload.
  */
 
 // =============================================
 // 0. GLOBALS & CONFIGURATION
 // =============================================
 
-// Widgets data – add new widgets here
 const widgetsData = [
   {
     id: 'image_slider',
@@ -69,7 +56,6 @@ const widgetsData = [
   }
 ];
 
-// Categories for filter chips
 const categories = [
   { id: 'all', label: 'All' },
   { id: 'productivity', label: 'Productivity' },
@@ -78,10 +64,9 @@ const categories = [
   { id: 'tools', label: 'Tools' }
 ];
 
-// Default card order (fallback)
+// Default order always includes all widget IDs
 const defaultOrder = widgetsData.map(w => w.id);
 
-// LocalStorage keys
 const STORAGE_KEYS = {
   ORDER: 'widgetHub_order',
   THEME: 'widgetHub_theme',
@@ -92,13 +77,11 @@ const STORAGE_KEYS = {
   SOUND_ENABLED: 'widgetHub_soundEnabled'
 };
 
-// Global state
 let currentCategory = 'all';
 let currentSort = 'default';
 let soundEnabled = localStorage.getItem(STORAGE_KEYS.SOUND_ENABLED) === 'true';
 let contextMenuTarget = null;
 
-// DOM elements
 const cardsContainer = document.getElementById('cardsContainer');
 const themeToggle = document.getElementById('themeToggle');
 const accentPicker = document.getElementById('accentColor');
@@ -120,8 +103,6 @@ let sortableInstance = null;
 // =============================================
 // 1. UTILITY FUNCTIONS
 // =============================================
-
-// Sound player
 function playSound(type = 'click') {
   if (!soundEnabled) return;
   try {
@@ -137,10 +118,9 @@ function playSound(type = 'click') {
     gainNode.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.1);
     oscillator.start();
     oscillator.stop(audioCtx.currentTime + 0.1);
-  } catch (e) { /* Ignore autoplay restrictions */ }
+  } catch (e) {}
 }
 
-// Update sound toggle icon
 function updateSoundIcon() {
   const icon = soundToggle.querySelector('.sound-icon');
   if (icon) icon.textContent = soundEnabled ? '🔊' : '🔇';
@@ -170,7 +150,16 @@ updateGreetingClock();
 // =============================================
 function getSavedOrder() {
   const saved = localStorage.getItem(STORAGE_KEYS.ORDER);
-  return saved ? JSON.parse(saved) : defaultOrder;
+  if (saved) {
+    try {
+      const parsed = JSON.parse(saved);
+      // Ensure all widgets are present (in case new ones were added)
+      const allIds = widgetsData.map(w => w.id);
+      const missing = allIds.filter(id => !parsed.includes(id));
+      return [...parsed, ...missing];
+    } catch { return defaultOrder; }
+  }
+  return defaultOrder;
 }
 
 function saveOrder(orderArray) {
@@ -325,18 +314,15 @@ function createCardElement(widget) {
   card.dataset.id = widget.id;
   card.dataset.category = widget.category;
   
-  // Status badge
   const badge = document.createElement('span');
   badge.className = 'status-badge';
   badge.dataset.status = 'unknown';
   badge.title = 'Checking availability...';
   
-  // Thumbnail
   const thumbnailDiv = document.createElement('div');
   thumbnailDiv.className = 'card-thumbnail';
   thumbnailDiv.style.backgroundImage = `url('${widget.thumbnail}')`;
   
-  // Icon (fallback)
   const iconSpan = document.createElement('div');
   iconSpan.className = 'icon';
   iconSpan.setAttribute('aria-hidden', 'true');
@@ -349,17 +335,14 @@ function createCardElement(widget) {
   const desc = document.createElement('p');
   desc.textContent = widget.description;
   
-  // Sparkline
   const sparklineDiv = document.createElement('div');
   sparklineDiv.className = 'sparkline';
   sparklineDiv.id = `sparkline-${widget.id}`;
   
-  // Last opened
   const lastOpenedSpan = document.createElement('div');
   lastOpenedSpan.className = 'last-opened';
   lastOpenedSpan.id = `last-opened-${widget.id}`;
   
-  // Note display
   const noteDiv = document.createElement('div');
   noteDiv.className = 'card-note';
   noteDiv.id = `note-${widget.id}`;
@@ -373,7 +356,6 @@ function createCardElement(widget) {
   card.appendChild(lastOpenedSpan);
   card.appendChild(noteDiv);
   
-  // Handle thumbnail load error -> show icon
   const img = new Image();
   img.onload = () => {
     thumbnailDiv.style.display = 'block';
@@ -391,12 +373,10 @@ function createCardElement(widget) {
 function renderCards() {
   let order = getSavedOrder();
   
-  // Filter by category
   let filteredWidgets = widgetsData.filter(w => 
     currentCategory === 'all' || w.category === currentCategory
   );
   
-  // Sort
   if (currentSort === 'most-used') {
     const usage = getUsageData();
     filteredWidgets.sort((a, b) => (usage[b.id]?.total || 0) - (usage[a.id]?.total || 0));
@@ -404,7 +384,6 @@ function renderCards() {
     const lastOpened = getLastOpenedData();
     filteredWidgets.sort((a, b) => (lastOpened[b.id] || 0) - (lastOpened[a.id] || 0));
   } else {
-    // Default: use saved order
     filteredWidgets.sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id));
   }
   
@@ -455,7 +434,7 @@ document.querySelectorAll('.sort-btn').forEach(btn => {
 });
 
 // =============================================
-// 9. ACTIVITY BADGES (Check availability)
+// 9. ACTIVITY BADGES
 // =============================================
 async function checkWidgetAvailability(card) {
   const url = card.dataset.url;
@@ -483,7 +462,7 @@ function checkAllWidgetsAvailability() {
 }
 
 // =============================================
-// 10. NAVIGATION & RIPPLE (with usage tracking)
+// 10. NAVIGATION & RIPPLE
 // =============================================
 function navigateToWidget(event, url) {
   if (event.type === 'keydown') event.preventDefault();
@@ -535,14 +514,9 @@ function createRipple(event) {
   ripple.addEventListener('animationend', () => ripple.remove(), { once: true });
 }
 
-function handleCardClick(e) {
-  navigateToWidget(e);
-}
-
+function handleCardClick(e) { navigateToWidget(e); }
 function handleCardKeydown(e) {
-  if (e.key === 'Enter' || e.key === ' ') {
-    navigateToWidget(e);
-  }
+  if (e.key === 'Enter' || e.key === ' ') navigateToWidget(e);
 }
 
 function attachCardListeners() {
@@ -566,14 +540,8 @@ function showContextMenu(e, card) {
   contextMenu.style.top = e.pageY + 'px';
   playSound('menu');
 }
-
-function hideContextMenu() {
-  contextMenu.style.display = 'none';
-}
-
-function attachContextMenu(card) {
-  card.addEventListener('contextmenu', (e) => showContextMenu(e, card));
-}
+function hideContextMenu() { contextMenu.style.display = 'none'; }
+function attachContextMenu(card) { card.addEventListener('contextmenu', (e) => showContextMenu(e, card)); }
 
 contextMenu.addEventListener('click', (e) => {
   const action = e.target.dataset.action;
@@ -581,25 +549,17 @@ contextMenu.addEventListener('click', (e) => {
   const card = contextMenuTarget;
   const url = card.dataset.url;
   const widgetId = card.dataset.id;
-  
   playSound('click');
-  
   switch (action) {
-    case 'open':
-      navigateToWidget({ currentTarget: card }, url);
-      break;
+    case 'open': navigateToWidget({ currentTarget: card }, url); break;
     case 'open-new-tab':
       window.open(url, '_blank');
       recordUsage(widgetId);
       updateSparkline(card);
       updateLastOpened(card);
       break;
-    case 'copy-link':
-      navigator.clipboard?.writeText(new URL(url, window.location.href).href);
-      break;
-    case 'edit-note':
-      openNoteEditor(widgetId);
-      break;
+    case 'copy-link': navigator.clipboard?.writeText(new URL(url, window.location.href).href); break;
+    case 'edit-note': openNoteEditor(widgetId); break;
     case 'clear-note':
       const notes = getNotesData();
       delete notes[widgetId];
@@ -609,14 +569,11 @@ contextMenu.addEventListener('click', (e) => {
   }
   hideContextMenu();
 });
-
 document.addEventListener('click', hideContextMenu);
-document.addEventListener('contextmenu', (e) => {
-  if (!e.target.closest('.card')) hideContextMenu();
-});
+document.addEventListener('contextmenu', (e) => { if (!e.target.closest('.card')) hideContextMenu(); });
 
 // =============================================
-// 12. THEME & ACCENT PERSISTENCE
+// 12. THEME & ACCENT (WITH IMMEDIATE SAVE)
 // =============================================
 function updateThemeToggleText() {
   const isDark = document.body.classList.contains('dark');
@@ -626,21 +583,22 @@ function updateThemeToggleText() {
   text.textContent = isDark ? 'Light' : 'Dark';
 }
 
+function applyTheme(isDark) {
+  if (isDark) document.body.classList.add('dark');
+  else document.body.classList.remove('dark');
+  updateThemeToggleText();
+  localStorage.setItem(STORAGE_KEYS.THEME, isDark ? 'dark' : 'light');
+}
+
 function loadThemePreference() {
   const saved = localStorage.getItem(STORAGE_KEYS.THEME);
-  if (saved === 'dark') {
-    document.body.classList.add('dark');
-  } else {
-    document.body.classList.remove('dark');
-  }
-  updateThemeToggleText();
+  applyTheme(saved === 'dark');
 }
 
 themeToggle.addEventListener('click', () => {
   playSound('click');
-  const isDark = document.body.classList.toggle('dark');
-  localStorage.setItem(STORAGE_KEYS.THEME, isDark ? 'dark' : 'light');
-  updateThemeToggleText();
+  const isDark = !document.body.classList.contains('dark');
+  applyTheme(isDark);
 });
 
 function applyAccentColor(color) {
@@ -663,7 +621,7 @@ accentPicker.addEventListener('input', (e) => {
 });
 
 // =============================================
-// 13. EXPORT / IMPORT / RESET LAYOUT
+// 13. EXPORT / IMPORT / RESET
 // =============================================
 function exportLayout() {
   playSound('menu');
@@ -689,51 +647,40 @@ function importLayout(file) {
   reader.onload = (e) => {
     try {
       const data = JSON.parse(e.target.result);
-      if (data.order) localStorage.setItem(STORAGE_KEYS.ORDER, JSON.stringify(data.order));
-      if (data.theme) {
-        if (data.theme === 'dark') document.body.classList.add('dark');
-        else document.body.classList.remove('dark');
-        updateThemeToggleText();
-      }
+      if (data.order) saveOrder(data.order);
+      if (data.theme) applyTheme(data.theme === 'dark');
       if (data.accent) {
         accentPicker.value = data.accent;
         applyAccentColor(data.accent);
         localStorage.setItem(STORAGE_KEYS.ACCENT, data.accent);
       }
-      if (data.notes) localStorage.setItem(STORAGE_KEYS.NOTES, JSON.stringify(data.notes));
+      if (data.notes) saveNotesData(data.notes);
       if (data.soundEnabled !== undefined) {
         soundEnabled = data.soundEnabled;
         localStorage.setItem(STORAGE_KEYS.SOUND_ENABLED, soundEnabled);
         updateSoundIcon();
       }
-      // Re-render with imported settings
       renderCards();
-      // Re-initialize sortable after DOM update
       if (sortableInstance) sortableInstance.destroy();
       initSortable();
-    } catch (err) {
-      alert('Invalid layout file.');
-    }
+    } catch { alert('Invalid layout file.'); }
   };
   reader.readAsDataURL(file);
 }
 
 exportBtn.addEventListener('click', exportLayout);
 importBtn.addEventListener('click', () => importFileInput.click());
-importFileInput.addEventListener('change', (e) => {
-  if (e.target.files[0]) importLayout(e.target.files[0]);
-});
+importFileInput.addEventListener('change', (e) => { if (e.target.files[0]) importLayout(e.target.files[0]); });
 resetBtn.addEventListener('click', () => {
   playSound('menu');
   if (confirm('Reset all layout and preferences to default?')) {
-    // Clear all stored data
     Object.values(STORAGE_KEYS).forEach(key => localStorage.removeItem(key));
     location.reload();
   }
 });
 
 // =============================================
-// 14. SOUND TOGGLE & DROPDOWN MENU
+// 14. SOUND & DROPDOWN
 // =============================================
 soundToggle.addEventListener('click', (e) => {
   e.stopPropagation();
@@ -742,36 +689,24 @@ soundToggle.addEventListener('click', (e) => {
   updateSoundIcon();
   playSound('menu');
 });
-
 updateSoundIcon();
 
-// Dropdown menu toggle
 menuToggleBtn.addEventListener('click', (e) => {
   e.stopPropagation();
   dropdownMenu.classList.toggle('show');
   playSound('menu');
 });
-
-// Close dropdown when clicking outside
 document.addEventListener('click', (e) => {
-  if (!menuToggleBtn.contains(e.target) && !dropdownMenu.contains(e.target)) {
+  if (!menuToggleBtn.contains(e.target) && !dropdownMenu.contains(e.target))
     dropdownMenu.classList.remove('show');
-  }
 });
-
-// Prevent dropdown from closing when interacting with it
 dropdownMenu.addEventListener('click', (e) => {
   e.stopPropagation();
-  // Close dropdown after an action is taken
-  if (e.target.classList.contains('dropdown-item')) {
-    dropdownMenu.classList.remove('show');
-  }
+  if (e.target.classList.contains('dropdown-item')) dropdownMenu.classList.remove('show');
 });
 
-// Attach sound to various UI elements
 function attachGlobalSoundListeners() {
-  const clickableSelectors = '.chip, .sort-btn, #themeToggle, .context-item';
-  document.querySelectorAll(clickableSelectors).forEach(el => {
+  document.querySelectorAll('.chip, .sort-btn, #themeToggle, .context-item').forEach(el => {
     el.addEventListener('click', () => playSound('click'));
   });
   document.querySelectorAll('.dropdown-item').forEach(el => {
@@ -780,7 +715,7 @@ function attachGlobalSoundListeners() {
 }
 
 // =============================================
-// 15. FLOATING EMOJIS (Parallax + Hover)
+// 15. FLOATING EMOJIS
 // =============================================
 function initFloatingEmojis() {
   const emojis = document.querySelectorAll('.floating span');
@@ -806,7 +741,6 @@ function initFloatingEmojis() {
     emoji.dataset.speed = 0.5 + Math.random() * 0.5;
   });
   
-  // Parallax effect
   let raf = null;
   window.addEventListener('mousemove', (e) => {
     if (raf) cancelAnimationFrame(raf);
@@ -832,7 +766,6 @@ function initFloatingEmojis() {
     });
   });
   
-  // Recalculate on resize
   window.addEventListener('resize', () => {
     const newCellW = window.innerWidth / cols;
     const newCellH = window.innerHeight / rows;
@@ -852,7 +785,7 @@ function initFloatingEmojis() {
 }
 
 // =============================================
-// 16. INIT SORTABLE (Drag & Drop)
+// 16. SORTABLE
 // =============================================
 function initSortable() {
   sortableInstance = Sortable.create(cardsContainer, {
@@ -867,13 +800,21 @@ function initSortable() {
 }
 
 // =============================================
-// 17. PAGE LOAD & INITIALIZATION
+// 17. INIT – CRITICAL: LOAD PREFERENCES FIRST
 // =============================================
-window.addEventListener('pageshow', () => {
-  document.body.classList.remove('fade-out');
-});
+window.addEventListener('pageshow', () => document.body.classList.remove('fade-out'));
+
+// Immediately apply theme to avoid FOUC
+(function() {
+  const savedTheme = localStorage.getItem(STORAGE_KEYS.THEME);
+  if (savedTheme === 'dark') document.body.classList.add('dark');
+  else document.body.classList.remove('dark');
+  const savedAccent = localStorage.getItem(STORAGE_KEYS.ACCENT);
+  if (savedAccent) document.documentElement.style.setProperty('--accent-color', savedAccent);
+})();
 
 document.addEventListener('DOMContentLoaded', () => {
+  // These will sync with the already-applied theme/accent
   loadThemePreference();
   loadAccentColor();
   renderCategoryChips();
@@ -882,6 +823,5 @@ document.addEventListener('DOMContentLoaded', () => {
   initFloatingEmojis();
   attachGlobalSoundListeners();
   
-  // Re-attach listeners if cards change dynamically (e.g., after sort)
   new MutationObserver(() => attachCardListeners()).observe(cardsContainer, { childList: true, subtree: true });
 });
